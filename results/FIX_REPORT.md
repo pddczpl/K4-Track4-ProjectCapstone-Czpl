@@ -1,4 +1,7 @@
 # BÁO CÁO TỔNG KẾT KHẮC PHỤC ĐỘ TRUNG THỰC & BẰNG CHỨNG (FIX REPORT)
+
+> **ĐÍNH CHÍNH SAU KIỂM TOÁN CODE (16/10/2026):** Bản này là báo cáo lịch sử Antigravity, không còn là chứng nhận cuối cùng. Trong lần rà soát trực tiếp, `app/main.py` được phát hiện gọi ba tham số không có trong `FollowingDistancePipeline.__init__` và gọi phương thức `draw_ego_corridor` không tồn tại; bản demo trước đó **không sẵn sàng chạy** dù pytest báo 15 passed. Các khẳng định TTC MAE 3.80s / 11.77s không được `results/metrics.json` hỗ trợ (kết quả Kalman ghi TTC MAE 1.39s). Kịch bản che khuất 40% chỉ cho ra 20m trong phép tính độ nhạy; **pipeline thực tế ghi trung bình 11.53m** sau che và không kích hoạt cờ nghi ngờ. Xem `PITCH.md` hiện tại và PR sửa lỗi để dùng các số liệu đính chính.
+
 ## VinFast Following-Distance & Collision-Time Assistant (Track 4: Vin Perception Hackathon)
 *Thời gian hoàn thành: 16/10/2026 | Môi trường: Windows 11, PowerShell 5.1, Python 3.11*
 
