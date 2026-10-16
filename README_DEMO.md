@@ -22,7 +22,7 @@ pip install -r requirements.txt
 | Tác vụ | Lệnh thực thi | Mô tả kết quả |
 | :--- | :--- | :--- |
 | **Chạy Giao diện Demo Trực tiếp** | `streamlit run app/main.py` | Mở ứng dụng web tương tác tiếng Việt, chọn video có sẵn hoặc upload video bất kỳ do giám khảo đưa ra. |
-| **Chạy Toàn bộ Unit Test** | `python -m pytest tests/` | Chạy 10 bài test kiểm chuẩn hình học Pinhole, lọc Kalman và pipeline (100% PASS). |
+| **Chạy Toàn bộ Unit Test** | `python -m pytest -q tests` | Kiểm tra hình học, Kalman, pipeline, tài liệu và luồng nhấn Chạy Video trong Streamlit. |
 | **Sinh Video Mô phỏng Ground Truth** | `python sim/generate_sim.py` | Tạo `sim/synthetic_dashcam.mp4` và `sim/ground_truth.csv`. |
 | **Chạy Đánh giá Đo lường Định lượng** | `python eval/evaluate.py` | So sánh Raw vs Kalman, xuất `results/metrics.json`, các biểu đồ `.png` và `results/demo_backup.mp4`. |
 | **Tạo & Phân tích Ca lỗi có chủ đích** | `python eval/generate_failure_case.py` | Tạo ảnh đối sánh `results/failure_case.png` và file phân tích `results/failure_case_analysis.json`. |
