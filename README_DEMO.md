@@ -76,8 +76,16 @@ pip install -r requirements.txt
 │   ├── test_kalman.py          # Kiểm thử bộ lọc Kalman & quy tắc nghi ngờ
 │   └── test_pipeline.py        # Kiểm thử tích hợp toàn bộ pipeline
 ├── requirements.txt            # Danh mục thư viện Python
-├── IMPACT.md                   # Phân tích tác động kinh tế đội xe GSM (15.3 tỷ/năm)
-├── PITCH.md                    # Kịch bản thuyết trình 10', 10 câu hỏi Q&A, checklist
+├── IMPACT.md                   # Phân tích tác động kinh tế đội xe GSM
+├── PITCH.md                    # Kịch bản thuyết trình 10', 14 câu hỏi Q&A, checklist
 ├── DATA.md                     # Nguồn gốc dữ liệu & cam kết an toàn
 └── README_DEMO.md              # Tài liệu khởi chạy nhanh này
 ```
+
+---
+
+### 5. Giới Hạn Của Những Gì Đã Chứng Minh (Bắt Buộc Minh Bạch)
+1. **Kiểm tra tính nhất quán (Consistency Check):** Mô phỏng dùng cùng mô hình Pinhole với thuật toán ước lượng; kết quả đo chứng minh tính đúng đắn của cài đặt và động lực học bộ lọc, không đại diện cho độ chính xác quang học thực địa ngoài đời.
+2. **Chưa có Ground Truth ngoài đời:** Không có thiết bị đo chuẩn ngoài đời thực (LiDAR/Radar) trong 2 giờ thi.
+3. **Đầu vào demo:** Chạy trên video tệp tải lên / video mẫu và sim phát lại, không kết nối cảm biến xe trực tiếp.
+
