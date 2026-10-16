@@ -115,9 +115,9 @@ def main():
             default_hfov = 90.0
             target_video_path = uploaded_file
         else:
-            target_video_path = "data/sample_dashcam.mp4"
+            target_video_path = None
             default_hfov = 75.0
-            st.sidebar.info("Chưa chọn file tải lên, đang dùng video mẫu mặc định.")
+            st.sidebar.info("Vui lòng chọn một video để kiểm tra đầu vào của bạn.")
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("2. Cấu hình Cảm biến & Trụ cột")
@@ -198,6 +198,9 @@ def main():
 
     # Xử lý Stream Video trực tiếp
     if start_stream:
+        if target_video_path is None:
+            st.error("Hãy tải một file video lên trước khi bắt đầu.")
+            return
         if hasattr(target_video_path, "getvalue"):
             suffix = os.path.splitext(target_video_path.name)[1].lower() or ".mp4"
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tfile:
@@ -218,6 +221,9 @@ def main():
             cap = cv2.VideoCapture(target_video_path)
 
         if not cap.isOpened():
+            cap.release()
+            if temp_video_path and os.path.exists(temp_video_path):
+                os.remove(temp_video_path)
             st.error(f"Không thể mở nguồn video ({target_video_path}). Vui lòng kiểm tra lại kết nối/định dạng.")
             return
 
@@ -293,7 +299,7 @@ def main():
                 # Thẻ 6: Hiệu năng FPS / Latency
                 p50 = stats.get("latency_p50_ms", 0.0)
                 fps_val = stats.get("fps", 0.0)
-                metric_perf.metric("Hiệu năng (CPU)", f"{fps_val:.1f} FPS", f"p50: {p50:.1f}ms")
+                metric_perf.metric("FPS pipeline (chưa gồm UI)", f"{fps_val:.1f} FPS", f"p50: {p50:.1f}ms")
 
                 # Chuyển đổi màu BGR sang RGB cho Streamlit
                 frame_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
