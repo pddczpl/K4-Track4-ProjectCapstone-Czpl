@@ -447,7 +447,8 @@ def main():
             - **Khoảng cách vật lý thực tế:** {setup.get('ground_truth_distance_m', 12.0)} m (Chiều rộng xe thật: {setup.get('true_vehicle_width_m', 1.8)}m)
             - **Tỷ lệ che khuất thử nghiệm:** {setup.get('occlusion_ratio_tested_percent', 40.0)}% bề ngang thân xe
             - **Phản ứng của Pipeline:**
-              + Bề rộng box lý thuyết khi bị che 40%: ~123.5 px -> Ước lượng cự ly thô nhảy vọt lên 20.0m (sai lệch +8.0m / +66.7%).
+              + **Quan sát pipeline:** Z trước che trung bình {res.get('average_estimated_z_before_occlusion_m', 0)}m, sau che {res.get('average_estimated_z_after_occlusion_m', 0)}m. Không quan sát bước nhảy 20m trong lần thử này.
+              + **Lý thuyết riêng:** Nếu box giảm 40% từ 205.9px còn ~123.5px, công thức Pinhole cho Z = 20.0m thay vì 12m (+66.7%). Đây không phải số đo từ YOLO.
               + Trạng thái cơ chế nghi ngờ: {'ĐÃ KÍCH HOẠT' if res.get('suspicion_mechanism_triggered') else 'CHƯA KÍCH HOẠT ĐỦ NHẠY (Báo cáo trung thực)'}.
             - **Hậu quả an toàn:** Bounding box co cụm do che khuất khiến hệ thống tưởng xe ở xa hơn thực tế, tiềm ẩn nguy cơ chậm cảnh báo bám đuôi.
             """)
