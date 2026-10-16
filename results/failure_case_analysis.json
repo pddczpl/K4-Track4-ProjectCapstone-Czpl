@@ -5,11 +5,11 @@
   "tracker": "ByteTrack",
   "filter": "VehicleKalmanFilter",
   "scenario_setup": {
-    "ground_truth_distance_m": 12.0,
+    "ground_truth_distance_m": 12,
     "true_vehicle_width_m": 1.8,
     "camera_focal_length_px": 1372.5,
     "unoccluded_box_width_px": 205.9,
-    "occlusion_ratio_tested_percent": 40.0,
+    "occlusion_ratio_tested_percent": 40,
     "occlusion_start_frame": 20,
     "total_frames_run": 50
   },
@@ -25,36 +25,36 @@
   },
   "sensitivity_by_occlusion_ratio": {
     "occlusion_10pct": {
-      "occlusion_ratio_percent": 10.0,
+      "occlusion_ratio_percent": 10,
       "detected_width_px": 185.3,
       "estimated_distance_m": 13.33,
       "absolute_error_m": 1.33,
       "relative_error_percent": 11.1
     },
     "occlusion_20pct": {
-      "occlusion_ratio_percent": 20.0,
+      "occlusion_ratio_percent": 20,
       "detected_width_px": 164.7,
-      "estimated_distance_m": 15.0,
-      "absolute_error_m": 3.0,
-      "relative_error_percent": 25.0
+      "estimated_distance_m": 15,
+      "absolute_error_m": 3,
+      "relative_error_percent": 25
     },
     "occlusion_30pct": {
-      "occlusion_ratio_percent": 30.0,
+      "occlusion_ratio_percent": 30,
       "detected_width_px": 144.1,
       "estimated_distance_m": 17.14,
       "absolute_error_m": 5.14,
       "relative_error_percent": 42.9
     },
     "occlusion_40pct": {
-      "occlusion_ratio_percent": 40.0,
+      "occlusion_ratio_percent": 40,
       "detected_width_px": 123.5,
-      "estimated_distance_m": 20.0,
-      "absolute_error_m": 8.0,
+      "estimated_distance_m": 20,
+      "absolute_error_m": 8,
       "relative_error_percent": 66.7
     }
   },
-  "root_cause_analysis": "Mô hình Pinhole ước lượng cự ly tỷ lệ nghịch với bề rộng bounding box (Z = f * W / w_px). Khi xe bị che khuất 40% bề ngang, detector chỉ bắt được phần thân xe còn lộ diện (~123px), khiến khoảng cách ước lượng bị nhân lên 1 / (1 - 0.4) = 1.67 lần (từ 12m nhảy thành ~20.1m). Hệ thống nhầm tưởng xe đang ở xa an toàn trong khi thực tế đang ở cự ly cảnh báo chú ý.",
-  "kalman_mitigation_behavior": "Trong thực nghiệm pipeline: Cơ chế nghi ngờ (Rule of Suspicion) chưa kích hoạt đủ nhạy. Khi phần dư đo đạc nhảy vọt, kiểm định Mahalanobis tăng ma trận hiệp phương sai đo R, gán cờ is_uncertain = True để hạ mức cảnh báo về 'KHÔNG CHẮC CHẮN'.",
+  "root_cause_analysis": "Trong phân tích độ nhạy giả định, nếu bounding box co 40% (205.9px thành 123.5px), mô hình Pinhole ước lượng 12m thành 20m (+66.7%). Đây KHÔNG phải kết quả đo pipeline: YOLO+ByteTrack+Kalman ghi Z trung bình 11.53m sau che. Sai số phụ thuộc bbox thực sự detector tạo ra.",
+  "kalman_mitigation_behavior": "Cơ chế nghi ngờ không kích hoạt trong 50 frame mô phỏng che khuất. Gating Mahalanobis chỉ là heuristic, không đảm bảo phát hiện mọi trường hợp và không được mô tả là đã hạ cảnh báo trong lần thử này.",
   "unavoidable_physical_limitations": [
     "Camera đơn (Monocular Pinhole) không thể phân biệt giữa (1) xe kích thước bình thường bị che khuất một phần và (2) xe cỡ nhỏ (như xe kei car/xe mini) đang ở xa hơn.",
     "Muốn khắc phục triệt để bắt buộc phải có cảm biến độ sâu chủ động (Radar sóng milimet 77GHz hoặc Stereo Camera)."

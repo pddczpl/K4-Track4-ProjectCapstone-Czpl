@@ -50,7 +50,7 @@
     "relative_error_percent": 9.2
   },
   "stress_pitch_vibration_15px": {
-    "name": "Nhún xe / rung kính lái (+-15px pitch)",
+    "name": "Proxy rung camera: bbox width jitter (sigma 2.5px; chưa mô hình pitch)",
     "valid_frames": 300,
     "raw_mae_m": 0.231,
     "raw_rmse_m": 0.394,

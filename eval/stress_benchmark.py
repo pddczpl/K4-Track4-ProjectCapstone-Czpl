@@ -6,7 +6,7 @@ Mục đích:
 - Đưa vào 5 loại sai lệch thực tế giữa thế giới thực và giả định của mô hình:
   1. Sai lệch chiều rộng xe thật (W_true lệch so với prior 1.80m: 1.65m, 1.95m, xe tải 2.30m)
   2. Sai số hiệu chuẩn tiêu cự camera f (+5%, +10%)
-  3. Dao động góc nhún xe / đường chân trời (pitch vibration +-15px)
+  3. Proxy rung camera bằng nhiễu bề rộng bounding box (sigma 2.5px); KHÔNG mô phỏng hình học pitch.
   4. Nhiễu rung viền box của detector (+-3px) và rớt khung hình (1-3 frames drop)
   5. Hiện tượng che khuất nhẹ (15% bề rộng thân xe)
 - Xuất:
@@ -63,7 +63,6 @@ def run_stress_benchmarks(random_seed: int = 42):
             "w_true": 1.80,
             "f_est": f_true,
             "box_jitter_sigma": 1.0,
-            "pitch_shift_px": 0.0,
             "drop_rate": 0.0,
             "occlusion_ratio": 0.0
         },
@@ -72,7 +71,6 @@ def run_stress_benchmarks(random_seed: int = 42):
             "w_true": 1.65,
             "f_est": f_true,
             "box_jitter_sigma": 1.5,
-            "pitch_shift_px": 0.0,
             "drop_rate": 0.0,
             "occlusion_ratio": 0.0
         },
@@ -81,7 +79,6 @@ def run_stress_benchmarks(random_seed: int = 42):
             "w_true": 1.95,
             "f_est": f_true,
             "box_jitter_sigma": 1.5,
-            "pitch_shift_px": 0.0,
             "drop_rate": 0.0,
             "occlusion_ratio": 0.0
         },
@@ -90,7 +87,6 @@ def run_stress_benchmarks(random_seed: int = 42):
             "w_true": 1.80,
             "f_est": f_true * 1.05,
             "box_jitter_sigma": 1.5,
-            "pitch_shift_px": 0.0,
             "drop_rate": 0.0,
             "occlusion_ratio": 0.0
         },
@@ -99,16 +95,14 @@ def run_stress_benchmarks(random_seed: int = 42):
             "w_true": 1.80,
             "f_est": f_true * 1.10,
             "box_jitter_sigma": 1.5,
-            "pitch_shift_px": 0.0,
             "drop_rate": 0.0,
             "occlusion_ratio": 0.0
         },
         "stress_pitch_vibration_15px": {
-            "name": "Nhún xe / rung kính lái (+-15px pitch)",
+            "name": "Proxy rung camera: bbox width jitter (sigma 2.5px; chưa mô hình pitch)",
             "w_true": 1.80,
             "f_est": f_true,
             "box_jitter_sigma": 2.5,
-            "pitch_shift_px": 15.0,
             "drop_rate": 0.0,
             "occlusion_ratio": 0.0
         },
@@ -117,7 +111,6 @@ def run_stress_benchmarks(random_seed: int = 42):
             "w_true": 1.80,
             "f_est": f_true,
             "box_jitter_sigma": 3.0,
-            "pitch_shift_px": 0.0,
             "drop_rate": 0.03,
             "occlusion_ratio": 0.0
         },
@@ -126,7 +119,6 @@ def run_stress_benchmarks(random_seed: int = 42):
             "w_true": 1.80,
             "f_est": f_true,
             "box_jitter_sigma": 2.0,
-            "pitch_shift_px": 0.0,
             "drop_rate": 0.0,
             "occlusion_ratio": 0.15
         }

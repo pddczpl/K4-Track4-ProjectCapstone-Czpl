@@ -38,7 +38,7 @@ gantt
    - Bấm ▶️ Chạy Video.
    - Cho Giám khảo thấy xe giảm cự ly từ 30m về 6.5m, hệ thống chuyển sang mức Đỏ (NGUY HIỂM) khi $TTC < 2.0s$.
 3. **Demo 2: So sánh Bật/Tắt Kalman trung thực:**
-   - Chỉ cho Giám khảo thấy: Bật Kalman giúp **giảm 30.2% phương sai nhiễu** của khoảng cách và **cung cấp vận tốc tương đối $v_Z$ để tính TTC**. Khi tắt Kalman, nếu chỉ lấy đạo hàm sai phân từ khoảng cách thô thì TTC bị nhiễu loạn nghiêm trọng (sai số trung bình vọt lên >11 giây).
+   - Chỉ cho Giám khảo thấy: Kalman **giảm 30.2% phương sai sai số khoảng cách** nhưng MAE tổng thể kém hơn Raw 10.5%. Bộ lọc cung cấp vận tốc tương đối $v_Z$ để tính TTC; **TTC MAE = 1.39 s, RMSE = 2.73 s** trên tập mẫu hợp lệ trong `results/metrics.json`. Chưa có bảng so sánh TTC Raw được lưu.
 4. **Demo 3: Xử lý video do Giám khảo đưa ra tại chỗ (Tải lên file bất kỳ):**
    - Chuyển sang nguồn *"📤 Tải lên Video bất kỳ (Giám khảo)"* $\to$ Tải tệp MP4 của Giám khảo và chạy trực tiếp.
    *(Dự phòng: Nếu máy chiếu hoặc tệp lỗi, chuyển sang nguồn 📼 Video Dự phòng Render sẵn `results/demo_backup.mp4` và giải thích minh bạch).*
@@ -61,19 +61,17 @@ Báo cáo đầy đủ mọi dải đo, **không giấu số xấu**:
   + Trong mô phỏng, xe phanh gấp từ $-5.0$ m/s rồi dừng/giữ cự ly ở 6.5m. Bộ lọc Kalman dùng mô hình chuyển động vận tốc tuyến tính ($F = \begin{bmatrix} 1 & \Delta t \\ 0 & 1 \end{bmatrix}$) nên gặp hiện tượng **độ trễ pha (phase lag)** khi vật thể đổi gia tốc đột ngột.
   + Trong khi đó, phép đo thô Pinhole đo từng khung hình độc lập không có quán tính lịch sử; trên ảnh sim sạch không có che khuất, box Pinhole đo tức thời lại ra số tĩnh rất khít ($0.071$m).
 - **Vậy giá trị thực sự của Kalman là gì?**
-  1. **Giảm phương sai nhiễu: 30.2%** (triệt tiêu hiện tượng giật box giữa các khung hình liên tiếp).
-  2. **Cung cấp vận tốc tương đối $v_Z$ và TTC ổn định:**
-     - Nếu tính TTC bằng sai phân đo thô ($v_Z = \Delta Z / \Delta t$): Sai số TTC MAE là **11.77 giây** (nhiễu pixel làm đạo hàm bùng nổ).
-     - Nếu dùng Trung bình trượt (Moving Average 5 khung): Sai số TTC MAE là **7.47 giây**.
-     - Dùng **Kalman Filter**: Sai số TTC MAE giảm xuống **3.80 giây** (giảm >67% sai số so với sai phân thô).
+  1. **Giảm phương sai sai số khoảng cách 30.2%** trên bộ mô phỏng chính; không có nghĩa giảm MAE ở mọi dải.
+  2. **Ước lượng vận tốc tương đối $v_Z$ và TTC:** TTC MAE trên tập frame hợp lệ **1.39 s**, RMSE **2.73 s** theo `results/metrics.json`.
+  3. **Giới hạn đánh giá:** `eval/evaluate.py` hiện lọc ra một số khung TTC không hợp lệ; chưa lưu tỷ lệ không ước lượng được TTC và chưa có đối chứng TTC Raw để tuyên bố phần trăm cải thiện.
 - **Hiệu năng hệ thống (Đo trên CPU laptop):**
   - Tốc độ: **46.5 FPS**. Độ trễ trung vị: **p50 = 20.95 ms**, **p95 = 25.5 ms** (nhận diện/theo dõi: ~19.8ms, hình học & Kalman: ~0.06ms, render: ~1.6ms).
 
-#### B. 1 Ca lỗi có chủ đích (`results/failure_case.png`)
-- **Hiện tượng:** Che khuất một phần (Partial Occlusion) do rào chắn hoặc xe máy tạt đầu che mất 40% bề ngang xe phía trước.
-- **Cơ chế lỗi:** Bề rộng box giảm từ 206px xuống 123px $\implies Z = f \cdot W / w_{\text{px}}$ nhảy từ 12.0m lên **20.08m (sai số $+8.08$m, tức $+67.4\%$)**.
-- **Hậu quả an toàn:** Xe thực tế đang ở cự ly cảnh báo chú ý (12m), nhưng hệ thống tưởng ở xa (20m, an toàn), dẫn tới nguy cơ bỏ sót cảnh báo.
-- **Cơ chế giảm thiểu:** Quy tắc Nghi ngờ (Rule of Suspicion) dựa trên khoảng cách Mahalanobis trong Kalman: khi kích thước box sụt giảm đột biến không khớp với động lực học, hệ thống hạ mức cảnh báo về **"KHÔNG CHẮC CHẮN"**.
+#### B. 1 Ca lỗi có chủ đích (`results/failure_case_analysis.json`)
+- **Kịch bản đã chạy:** xe ở cự ly thật 12.0m, bị che khuất 40% bề ngang từ frame 20 trong 50 frame thử qua YOLOv8n + ByteTrack + Kalman.
+- **Kết quả quan sát:** trước che Z Kalman trung bình **11.67m**, sau che **11.53m**, và cờ `is_uncertain` **không kích hoạt**. Pipeline **không ghi nhận bước nhảy lên 20m** trong lần thử đó.
+- **Phân tích độ nhạy lý thuyết (khác với kết quả pipeline):** nếu box co từ 205.9px còn 123.5px (giảm 40%), công thức Pinhole cho Z tăng từ 12m lên **20m (+66.7%)**.
+- **Giới hạn:** mức sai số thực nghiệm phụ thuộc detector có thực sự co box hay không; cơ chế nghi ngờ chưa bắt được ca che khuất được dựng trong mô phỏng. Cần kiểm thử thêm với bộ video mà bbox đo được thực sự co để định lượng rủi ro bỏ sót cảnh báo.
 
 #### C. Ước lượng tác động đội xe GSM (`IMPACT.md`, kịch bản cơ sở từ `eval/impact_calc.py`)
 - Kịch bản giả định đội xe 30.000 xe taxi:
@@ -97,7 +95,7 @@ Báo cáo đầy đủ mọi dải đo, **không giấu số xấu**:
 > 2. **Chưa có Ground Truth ngoài đời thực:** Nhóm không có cảm biến Lidar hay Radar tham chiếu ngoài đời thực trong khuôn khổ 2 giờ thi; các clip dashcam thật chỉ dùng để kiểm tra trực quan về khả năng detect và track.
 > 3. **Phụ thuộc góc nhìn và độ phẳng mặt đường:** Mô hình Pinhole giả định xe đi thẳng phía trước (yaw $\approx 0^\circ$) và mặt đường phẳng. Khi xe quay góc xiên $>30^\circ$, lên xuống dốc gắt hoặc nhún phanh mạnh, sai số khoảng cách sẽ tăng cao.
 > 4. **Giới hạn khoảng cách nhận diện:** Ngoài 35m ở độ phân giải 720p, xe nhỏ hơn 45 pixel khiến detector YOLOv8n dễ bị rớt khung hình (missed detections).
-> 5. **Đầu vào demo:** Toàn bộ demo chạy trên video tải lên / video mẫu và sim, không phải luồng camera gắn trên xe đang chạy.
+> 5. **Đầu vào demo:** Dữ liệu đã xác minh là video tải lên/video mẫu và sim; kết nối trực tiếp IP webcam mới chỉ có code, chưa thử trên cảm biến xe thực tế.
 
 ---
 
@@ -109,7 +107,7 @@ Báo cáo đầy đủ mọi dải đo, **không giấu số xấu**:
 
 #### 2. "Tại sao số đo của Kalman ở dải 5–10m lại tệ hơn đo thô tới gần 4 lần?"
 > **Đáp án:**
-> *"Vì hiện tượng **độ trễ pha (phase lag)** khi xe phanh gấp. Trong kịch bản sim, xe phía trước đổi tốc độ đột ngột từ $-5.2$ m/s rồi khựng lại ở 6.5m. Bộ lọc Kalman vận tốc tuyến tính cần 4–5 khung hình để thích ứng với gia tốc mới, nên ước lượng bị trễ khoảng 0.27m. Trong khi đó đo thô Pinhole không có bộ nhớ lịch sử nên trên ảnh sim sạch không bị trễ. Đổi lại, Kalman giúp giảm 30.2% phương sai nhiễu và là cách duy nhất ước lượng được TTC ổn định."*
+> *"Mô hình Kalman tuyến tính có độ trễ khi quỹ đạo đổi gia tốc đột ngột. Trong mô phỏng, Kalman giảm 30.2% phương sai sai số nhưng MAE cự ly tổng thể kém Raw 10.5%. TTC MAE Kalman là 1.39 giây trên tập khung hợp lệ; chúng tôi chưa có phép đối chứng TTC Raw tương ứng."*
 
 #### 3. "Nếu ra đường thật thì sai số khoảng cách là bao nhiêu?"
 > **Đáp án:**
@@ -125,7 +123,7 @@ Báo cáo đầy đủ mọi dải đo, **không giấu số xấu**:
 
 #### 6. "Vì sao cần tự viết bộ lọc Kalman mà không dùng trung bình trượt (Moving Average)?"
 > **Đáp án:**
-> *"Trung bình trượt gây trễ pha lớn và không ước lượng được vận tốc tương đối $v_Z$. Để tính TTC bằng trung bình trượt, ta vẫn phải làm sai phân số, dẫn đến sai số TTC MAE lên tới **7.47 giây**. Bộ lọc Kalman trạng thái $[Z, v_Z]^T$ ước lượng trực tiếp vận tốc, giúp sai số TTC giảm xuống **3.80 giây**."*
+> *"Trung bình trượt chủ yếu làm mượt giá trị đo, còn bộ lọc Kalman ước lượng đồng thời cự ly Z, vận tốc tương đối vZ và độ bất định. Để chứng minh Kalman có TTC tốt hơn trung bình trượt cần chạy hai thuật toán trên cùng mẫu; hiện chưa có bảng so sánh đó."*
 
 #### 7. "Tiêu cự $f$ lấy ở đâu nếu Giám khảo đưa một video bất kỳ không biết thông số camera?"
 > **Đáp án:**
@@ -137,14 +135,11 @@ Báo cáo đầy đủ mọi dải đo, **không giấu số xấu**:
 
 #### 9. "Khi nào hệ thống sẽ nghi ngờ kết quả đo của chính nó?"
 > **Đáp án:**
-> *"Hệ thống áp dụng **Quy tắc Nghi ngờ (Rule of Suspicion)**:
-> 1. Khi độ bất định tương đối của Kalman $\sigma_Z / Z > 25\%$.
-> 2. Khi phần dư đo đạc vượt ngưỡng khoảng cách Mahalanobis $\chi^2 > 9.0$ (tương đương lệch $>3\sigma$).
-> Lúc này hệ thống lập tức hạ mức cảnh báo xuống 'KHÔNG CHẮC CHẮN' để tránh báo động giả."*
+> *"Hệ thống có hai cơ chế nghi ngờ: độ bất định Kalman quá cao hoặc phần dư Mahalanobis vượt ngưỡng. Khi phát hiện, UI hiển thị KHÔNG CHẮC CHẮN. Tuy nhiên cách này chưa đảm bảo phát hiện mọi ca che khuất; thực nghiệm hiện tại không kích hoạt cờ."*
 
 #### 10. "Hệ thống có chạy được thời gian thực (real-time) trên phần cứng xe không?"
 > **Đáp án:**
-> *"Trên CPU máy tính thử nghiệm, hệ thống đạt **46.5 FPS** (độ trễ p50 là **20.95 ms**). Khối lượng tính toán nặng nhất là YOLOv8n (~19.8ms), còn phần hình học và Kalman chỉ tốn ~0.06ms. Trên phần cứng nhúng ô tô, hoàn toàn có thể chạy mượt ở tần số 30 Hz."*
+> *"Bản ghi benchmark hiện tại báo 46.5 FPS, p50 20.95ms trên máy thử nghiệm, không tính đầy đủ overhead Streamlit và chưa có kiểm thử trên phần cứng nhúng ô tô. Chúng tôi chưa khẳng định đạt 30 Hz trong xe thương mại."*
 
 #### 11. "Nếu đường dốc hoặc xe bị nhún lắc khi phanh gấp thì phương án tiếp đất mặt đường ($Z_{\text{ground}}$) bị ảnh hưởng thế nào?"
 > **Đáp án:**
@@ -152,7 +147,7 @@ Báo cáo đầy đủ mọi dải đo, **không giấu số xấu**:
 
 #### 12. "Con số tiết kiệm ~9.29 tỷ VNĐ trong IMPACT.md dựa trên cơ sở nào, có kiểm chứng được không?"
 > **Đáp án:**
-> *"Đây là **mô hình ước lượng giả định** (kịch bản cơ sở do script `eval/impact_calc.py` tính toán), **không phải số liệu tài chính đã kiểm chứng**. Mô hình giả định đội 30.000 xe, mỗi xe gặp 350 sự kiện bám đuôi sát/năm, xác suất xảy ra va chạm là 0.015% và cảnh báo giúp ngăn chặn được 25% số vụ. Chúng tôi đã đưa cả 3 kịch bản (thận trọng 0.51 tỷ, cơ sở 9.29 tỷ, lạc quan 51.7 tỷ) trong tài liệu để thể hiện tính bất định."*
+> *"Đây là **mô hình ước lượng giả định** (kịch bản cơ sở do script `eval/impact_calc.py` tính toán), **không phải số liệu tài chính đã kiểm chứng**. Mô hình giả định đội 30.000 xe, mỗi xe gặp 350 sự kiện bám đuôi sát/năm, xác suất xảy ra va chạm là 0.015% và cảnh báo giúp ngăn chặn được 25% số vụ. Chúng tôi đã đưa cả 3 kịch bản (thận trọng 0.51 tỷ, cơ sở 9.29 tỷ, lạc quan 51.71 tỷ) trong tài liệu để thể hiện tính bất định."*
 
 #### 13. "Làm thế nào để mở rộng hệ thống này trong tương lai?"
 > **Đáp án:**
@@ -171,7 +166,7 @@ Báo cáo đầy đủ mọi dải đo, **không giấu số xấu**:
 | **1** | Demo chạy trên đúng máy sẽ dùng, xử lý được video tải lên | **CẦN NGƯỜI DÙNG XÁC NHẬN** | *Hướng dẫn:* Người dùng phải tự chạy `streamlit run app/main.py` trên laptop demo trước giờ thi, thử upload 1 clip bất kỳ. |
 | **2** | Có video quay sẵn để dự phòng nếu demo trực tiếp hỏng | **CÓ** | Tệp `results/demo_backup.mp4` đã render sẵn đầy đủ HUD & telemetry cảnh báo. |
 | **3** | Có một con số đo, và cả team nói được nó đo như thế nào | **CÓ** | Tệp `results/metrics.json` và bảng ở mục I.3 (lưu ý: Kalman tệ hơn đo thô ở tổng thể và dải 5–10m, nhưng giảm phương sai 30.2% và ổn định TTC). Đo qua sim `eval/evaluate.py`. |
-| **4** | Có ít nhất một ca lỗi, kèm lý do vì sao hệ thống sai | **CÓ** | Tệp `results/failure_case.png` và `results/failure_case_analysis.json` (che khuất 40% làm box co lại, khoảng cách bị tính xa hơn 67.4%). |
+| **4** | Có ít nhất một ca lỗi, kèm lý do vì sao hệ thống sai | **CÓ** | Tệp `results/failure_case.png` và `results/failure_case_analysis.json` (trong pipeline cờ nghi ngờ không kích hoạt; +66.7% chỉ là phân tích độ nhạy giả định khi bbox co 40%). |
 | **5** | Chỉ ra được ít nhất 2 trụ cột và vị trí của chúng | **CÓ** | 5 trụ cột: Học (`src/detect.py`), Hình học (`src/geometry.py`), Bất định (`src/kalman.py`), Thời gian (`src/timing.py`), Bằng chứng (`results/metrics.json`, `eval/evaluate.py`). |
 | **6** | Không dùng dữ liệu thật của bệnh nhân hoặc sinh viên | **CÓ** | Xem `DATA.md` (chỉ dùng clip Udacity MIT License và sim tổng hợp toán học). |
 | **7** | Mỗi thành viên trả lời được vì sao team chọn cách làm này | **CẦN NGƯỜI DÙNG XÁC NHẬN** | *Hướng dẫn:* Người dùng (làm 1 mình) đọc kỹ 14 câu hỏi Q&A ở mục III để tự tin trả lời trước hội đồng. |

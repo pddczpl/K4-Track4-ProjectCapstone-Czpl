@@ -20,6 +20,8 @@ Mục đích:
 from typing import Dict, Optional, Tuple
 import numpy as np
 
+from src.geometry import VEHICLE_CLASS_PRIORS
+
 
 class VehicleKalmanFilter:
     """
@@ -179,7 +181,8 @@ class MultiTargetKalmanManager:
         class_name: str = "car",
         custom_width_m: Optional[float] = None
     ) -> Tuple[float, float, float, float, bool]:
-        w_real = custom_width_m if custom_width_m is not None else self.vehicle_width_m
+        w_real = (custom_width_m if custom_width_m is not None
+                  else VEHICLE_CLASS_PRIORS.get(class_name, self.vehicle_width_m))
 
         if track_id not in self.filters:
             kf = VehicleKalmanFilter(

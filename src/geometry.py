@@ -15,7 +15,7 @@ Mục đích:
   + Quyết định thiết kế: Chọn Phương án A làm bộ ước lượng chính, dùng Phương án B để kiểm tra tính hợp lý (sanity check).
 - Hiệu chuẩn tiêu cự f:
   + Tính f từ trường nhìn ngang (HFOV): f = W_img / (2 * tan(HFOV / 2)).
-  + Hỗ trợ cấu hình camera chuẩn VinFast VF8 / VF e34 (HFOV ~ 90°-120°).
+  + Hỗ trợ HFOV tùy chỉnh. Mọi preset HFOV trong demo là giả định mô phỏng, không phải thông số hiệu chuẩn VinFast được xác minh.
 - Phân tích độ nhạy (Sensitivity Analysis):
   + dZ / dW_real = Z / W_real
   + dZ / df = Z / f

@@ -91,10 +91,12 @@ class FollowingDistancePipeline:
         horizon_ratio: float = 0.50,
         confidence_threshold: float = 0.25,
         use_kalman: bool = True,
+        show_ego_corridor: bool = True,
         alert_config: Optional[AlertConfig] = None,
         device: str = "cpu"
     ):
         self.use_kalman = use_kalman
+        self.show_ego_corridor = show_ego_corridor
         self.alert_config = alert_config if alert_config is not None else AlertConfig()
         self.timing = PipelineTiming()
         self.tracker = VehicleTracker(confidence_threshold=confidence_threshold, device=device)
@@ -216,7 +218,8 @@ class FollowingDistancePipeline:
             w_px = max(1.0, x2 - x1)
 
             # Ước lượng khoảng cách thô Pinhole
-            z_raw = self.geometry.estimate_distance_width(w_px, cls_name)
+            custom_width = self.kalman_manager.vehicle_width_m if cls_name == "car" else None
+            z_raw = self.geometry.estimate_distance_width(w_px, cls_name, custom_width_m=custom_width)
             z_ground = self.geometry.estimate_distance_ground(y2)
 
             # Kiểm tra xem xe có nằm trong hành lang làn đường trước xe chủ không
@@ -227,7 +230,8 @@ class FollowingDistancePipeline:
                     track_id=tid,
                     z_measured=z_raw,
                     dt=dt,
-                    class_name=cls_name
+                    class_name=cls_name,
+                    custom_width_m=custom_width
                 )
             else:
                 vz_est, ttc = self._estimate_raw_velocity_and_ttc(tid, z_raw, t_curr)
@@ -318,55 +322,63 @@ class FollowingDistancePipeline:
         return annotated_frame, frame_results, stats
 
     def _update_tailgating_events(self, primary_target: Optional[Dict[str, Any]], t_curr: float) -> None:
-        """Gộp các khung hình nguy hiểm liên tiếp thành 1 sự kiện bám đuôi."""
+        """Ghi sự kiện theo từng xe, chỉ công nhận khi nguy hiểm kéo dài tối thiểu 1 giây."""
         cfg = self.alert_config
-        is_danger = (primary_target is not None and primary_target["alert_level"] == "NGUY HIỂM")
+        is_danger = primary_target is not None and primary_target["alert_level"] == "NGUY HIỂM"
 
-        if is_danger:
-            z = primary_target["z_est_m"]
-            ttc = primary_target["ttc_s"]
-            vz = primary_target["vz_est_kmh"]
-            tid = primary_target["track_id"]
-
-            if self._current_event is None:
-                self._current_event = {
-                    "event_id": len(self.tailgating_events) + 1,
-                    "track_id": tid,
-                    "start_time_s": round(t_curr, 2),
-                    "end_time_s": round(t_curr, 2),
-                    "duration_s": 0.0,
-                    "min_z_m": round(z, 2),
-                    "min_ttc_s": round(ttc, 2),
-                    "max_closing_speed_kmh": round(abs(vz), 1),
-                    "frame_count": 1
-                }
-            else:
+        if self._current_event is not None:
+            previous_id = self._current_event["track_id"]
+            current_id = primary_target["track_id"] if is_danger else None
+            if not is_danger or current_id != previous_id:
                 ev = self._current_event
-                ev["end_time_s"] = round(t_curr, 2)
-                ev["duration_s"] = round(t_curr - ev["start_time_s"], 2)
-                ev["min_z_m"] = min(ev["min_z_m"], round(z, 2))
-                ev["min_ttc_s"] = min(ev["min_ttc_s"], round(ttc, 2))
-                ev["max_closing_speed_kmh"] = max(ev["max_closing_speed_kmh"], round(abs(vz), 1))
-                ev["frame_count"] += 1
-        else:
-            if self._current_event is not None:
-                ev = self._current_event
-                if ev["duration_s"] >= cfg.min_event_duration_s or ev["frame_count"] >= 15:
+                if ev["duration_s"] >= cfg.min_event_duration_s:
                     self.tailgating_events.append(ev)
                 self._current_event = None
 
+        if not is_danger:
+            return
+
+        z = primary_target["z_est_m"]
+        ttc = primary_target["ttc_s"]
+        vz = primary_target["vz_est_kmh"]
+        tid = primary_target["track_id"]
+        if self._current_event is None:
+            self._current_event = {
+                "event_id": len(self.tailgating_events) + 1,
+                "track_id": tid,
+                "start_time_s": round(t_curr, 3),
+                "end_time_s": round(t_curr, 3),
+                "duration_s": 0.0,
+                "min_z_m": round(z, 2),
+                "min_ttc_s": round(ttc, 2),
+                "max_closing_speed_kmh": round(max(0.0, -vz), 1),
+                "frame_count": 1
+            }
+        else:
+            ev = self._current_event
+            ev["end_time_s"] = round(t_curr, 3)
+            ev["duration_s"] = round(t_curr - ev["start_time_s"], 3)
+            ev["min_z_m"] = min(ev["min_z_m"], round(z, 2))
+            ev["min_ttc_s"] = min(ev["min_ttc_s"], round(ttc, 2))
+            ev["max_closing_speed_kmh"] = max(ev["max_closing_speed_kmh"], round(max(0.0, -vz), 1))
+            ev["frame_count"] += 1
+
+    def get_tailgating_events(self) -> List[Dict[str, Any]]:
+        """Trả về sự kiện đã hoàn tất và sự kiện đang mở nếu đủ thời lượng; không thay đổi state."""
+        events = list(self.tailgating_events)
+        if self._current_event is not None and self._current_event["duration_s"] >= self.alert_config.min_event_duration_s:
+            events.append(dict(self._current_event))
+        return events
+
     def export_events_csv(self, output_path: str = "results/events.csv") -> Optional[str]:
-        """Xuất danh sách sự kiện bám đuôi nguy hiểm ra file CSV."""
-        if not self.tailgating_events and self._current_event is not None:
-            if self._current_event["duration_s"] >= self.alert_config.min_event_duration_s:
-                self.tailgating_events.append(self._current_event)
-
-        if not self.tailgating_events:
+        """Xuất CSV khi có sự kiện hợp lệ, kể cả sự kiện còn mở ở cuối video."""
+        events = self.get_tailgating_events()
+        if not events:
             return None
-
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        df_ev = pd.DataFrame(self.tailgating_events)
-        df_ev.to_csv(output_path, index=False)
+        directory = os.path.dirname(output_path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+        pd.DataFrame(events).to_csv(output_path, index=False)
         return output_path
 
     def render_hud(
@@ -379,16 +391,17 @@ class FollowingDistancePipeline:
         out = frame.copy()
         h, w = out.shape[:2]
 
-        # 1. Vẽ ranh giới hành lang Ego-lane Corridor mờ
-        corridor_overlay = out.copy()
-        hy = int(self.geometry.horizon_y)
-        p1 = (int(w * (0.50 - 0.16)), hy)
-        p2 = (int(w * (0.50 + 0.16)), hy)
-        p3 = (int(w * (0.50 + 0.38)), h)
-        p4 = (int(w * (0.50 - 0.38)), h)
-        corridor_poly = np.array([p1, p2, p3, p4], np.int32)
-        cv2.polylines(corridor_overlay, [corridor_poly], True, (0, 200, 255), 1, cv2.LINE_AA)
-        cv2.addWeighted(corridor_overlay, 0.4, out, 0.6, 0, out)
+        if self.show_ego_corridor:
+            # 1. Vẽ ranh giới hành lang Ego-lane Corridor mờ
+            corridor_overlay = out.copy()
+            hy = int(self.geometry.horizon_y)
+            p1 = (int(w * (0.50 - 0.16)), hy)
+            p2 = (int(w * (0.50 + 0.16)), hy)
+            p3 = (int(w * (0.50 + 0.38)), h)
+            p4 = (int(w * (0.50 - 0.38)), h)
+            corridor_poly = np.array([p1, p2, p3, p4], np.int32)
+            cv2.polylines(corridor_overlay, [corridor_poly], True, (0, 200, 255), 1, cv2.LINE_AA)
+            cv2.addWeighted(corridor_overlay, 0.4, out, 0.6, 0, out)
 
         # 2. Vẽ các phương tiện
         for trk in targets:
@@ -445,7 +458,7 @@ class FollowingDistancePipeline:
             cv2.rectangle(out, (w - bw - 24, 8), (w - 10, 48), col, -1)
             cv2.putText(out, alert_badge, (w - bw - 18, 34), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2, cv2.LINE_AA)
         else:
-            no_target_str = "[AN TOÀN] Không có xe phía trước trong làn"
+            no_target_str = "[KHÔNG XÁC ĐỊNH] Không có mục tiêu phía trước được theo dõi"
             (bw, bh), _ = cv2.getTextSize(no_target_str, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)
             cv2.putText(out, no_target_str, (w - bw - 20, 34), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (100, 255, 100), 1, cv2.LINE_AA)
 

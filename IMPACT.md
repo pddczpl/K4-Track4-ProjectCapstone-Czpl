@@ -30,9 +30,11 @@ $$\text{Tổng giá trị thặng dư} = \text{Tiết kiệm sửa chữa} + \te
 
 #### Bảng thông số đầu vào và tình trạng nguồn kiểm chứng:
 
+> **Phạm vi mô hình:** 3 trường hợp dưới đây là kịch bản giả định về quy mô triển khai tương lai, không phải 3 mức độ rủi ro đã đo được của đội xe thực tế. Đặc biệt, kịch bản cơ sở 30.000 ô tô **không phải** khẳng định quy mô xe taxi điện GSM đang hoạt động. Các tỷ lệ ngăn va chạm và chi phí là giả định, nên số tiền tiết kiệm **chưa phải tác động thực tế đã được chứng minh**.
+
 | Thông số | Kịch bản Thận trọng | Kịch bản Cơ sở (Base) | Kịch bản Lạc quan | Tình trạng Nguồn kiểm chứng |
 | :--- | :---: | :---: | :---: | :--- |
-| **Quy mô đội xe ô tô điện ($N_{\text{xe}}$)** | 10.000 xe | 30.000 xe | 50.000 xe | **CÓ NGUỒN:** Báo chí đưa tin quy mô toàn hệ thống Xanh SM đạt trên 100.000 xe (gồm ô tô & xe máy điện) trong giai đoạn 2024-2025 ([CafeF.vn](https://cafef.vn), [TuoiTre.vn](https://tuoitre.vn), truy cập 16/10/2026). Số lượng ô tô ước tính 30.000–50.000 xe. |
+| **Quy mô đội xe ô tô điện ($N_{\text{xe}}$)** | 10.000 xe | 30.000 xe | 50.000 xe | **NGUỒN THAM KHẢO + GIẢ ĐỊNH KỊCH BẢN:** Báo cáo thị trường [B&Company (08/12/2025)](https://b-company.jp/vietnam-ride-hailing-market-2025-competition-between-xanh-sm-grab-and-be/) nêu tổng xe Xanh SM trên 100.000, gồm khoảng 20.000 ô tô và 80.000 xe máy điện. Đây là ước lượng từ nguồn thứ cấp, không phải kiểm toán nội bộ. **Các giá trị 10.000 / 30.000 / 50.000 ô tô trong phép tính là giả định để khảo sát quy mô triển khai**, không khẳng định đội xe ô tô GSM hiện có 30.000–50.000 chiếc. |
 | **Sự kiện bám đuôi nguy hiểm / xe / năm** | 200 lần | 350 lần | 500 lần | **GIẢ ĐỊNH — chưa có nguồn kiểm chứng** (Ước lượng tài xế đô thị gặp 1–2 lần bám sát mỗi ngày làm việc). |
 | **Xác suất va chạm khi bám đuôi sát ($P$)** | 0.00010 (0.010%) | 0.00015 (0.015%) | 0.00020 (0.020%) | **GIẢ ĐỊNH — chưa có nguồn kiểm chứng** (Trung bình 10.000 lần bám sát có 1.5 lần xảy ra va chạm quệt đuôi). |
 | **Tỷ lệ cảnh báo ngăn ngừa được va chạm** | 15.0% | 25.0% | 35.0% | **GIẢ ĐỊNH — chưa có nguồn kiểm chứng** (Phụ thuộc thời gian phản xạ của tài xế khi nhận cảnh báo). |

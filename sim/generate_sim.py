@@ -2,7 +2,7 @@
 BỘ MÔ PHỎNG TỔNG HỢP (Synthetic Simulation Generator)
 ====================================================
 Cấu hình chuẩn:
-- Camera ADAS hướng trước VinFast VF8 / VF9 (VinFast ADAS Forward-Looking Camera):
+- Camera hướng trước GIẢ ĐỊNH cho mô phỏng ADAS (không phải thông số camera VF8/VF9 chính thức):
   + Độ phân giải: 1280x720, 30 FPS, độ dài 10 giây (300 frames)
   + HFOV = 50.0 độ => Tiêu cự f = (1280/2) / tan(25 deg) = 1372.5 pixel
   + Chiều cao gắn camera kính lái: h_cam = 1.30m
@@ -182,7 +182,7 @@ def generate_synthetic_dataset(
     out_video.release()
     df = pd.DataFrame(records)
     df.to_csv(output_csv_path, index=False)
-    print(f"Generated synthetic simulation: {output_video_path} (HFOV={hfov_deg} deg, f={focal_length_px:.1f}px)")
+    print(f"Generated synthetic simulation: {output_video_path} (assumed HFOV={hfov_deg} deg, f={focal_length_px:.1f}px)")
 
 
 if __name__ == "__main__":

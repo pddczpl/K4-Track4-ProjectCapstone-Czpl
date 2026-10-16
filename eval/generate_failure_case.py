@@ -218,16 +218,17 @@ def run_real_pipeline_failure_case():
         },
         "sensitivity_by_occlusion_ratio": sensitivity_results,
         "root_cause_analysis": (
-            "Mô hình Pinhole ước lượng cự ly tỷ lệ nghịch với bề rộng bounding box (Z = f * W / w_px). "
-            "Khi xe bị che khuất 40% bề ngang, detector chỉ bắt được phần thân xe còn lộ diện (~123px), "
-            "khiến khoảng cách ước lượng bị nhân lên 1 / (1 - 0.4) = 1.67 lần (từ 12m nhảy thành ~20.1m). "
-            "Hệ thống nhầm tưởng xe đang ở xa an toàn trong khi thực tế đang ở cự ly cảnh báo chú ý."
+            "Phân tích độ nhạy giả định: nếu box YOLO thu hẹp 40% từ ~206px còn ~123px, "
+            "mô hình Pinhole (Z=f*W/w_px) có thể tăng cự ly từ 12m lên 20m (+66.7%). "
+            "Đây KHÔNG phải khoảng cách pipeline đo được trong 50 frame; "
+            f"YOLO+ByteTrack+Kalman ghi Z trung bình sau che là {avg_z_occluded:.2f}m. "
+            "Mức ảnh hưởng phụ thuộc bbox detector thực sự dự đoán."
         ),
         "kalman_mitigation_behavior": (
             f"Trong thực nghiệm pipeline: Cơ chế nghi ngờ (Rule of Suspicion) "
             f"{'đã kích hoạt' if len(uncertain_triggers) > 0 else 'chưa kích hoạt đủ nhạy'}. "
-            f"Khi phần dư đo đạc nhảy vọt, kiểm định Mahalanobis tăng ma trận hiệp phương sai đo R, "
-            f"gán cờ is_uncertain = True để hạ mức cảnh báo về 'KHÔNG CHẮC CHẮN'."
+            f"Cơ chế có thể gán cờ is_uncertain khi phần dư vượt ngưỡng Mahalanobis, "
+            f"nhưng chưa thể giả định che khuất tất yếu kích hoạt cờ."
         ),
         "unavoidable_physical_limitations": [
             "Camera đơn (Monocular Pinhole) không thể phân biệt giữa (1) xe kích thước bình thường bị che khuất một phần và (2) xe cỡ nhỏ (như xe kei car/xe mini) đang ở xa hơn.",

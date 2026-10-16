@@ -49,7 +49,7 @@
 - **Mục đích:** Cung cấp Ground Truth $Z(t)$ và $\text{TTC}(t)$ tuyệt đối chính xác để đo đạc sai số MAE / RMSE định lượng mà không bị sai lệch bởi lỗi gán nhãn thủ công (human annotation bias).
 - **Cấu hình mô hình quang học:**
   + Độ phân giải: $1280 \times 720$ pixel, $30.0$ FPS, $300$ khung hình ($10.0$ giây).
-  + Góc mở camera (HFOV): $50.0^\circ$ (cấu hình chuẩn cụm camera ADAS hướng trước của VinFast VF8 / VF9).
+  + Góc mở camera (HFOV): $50.0^\circ$ (**GIẢ ĐỊNH mô phỏng**, chưa có tài liệu hãng xác minh thông số HFOV chính thức VF8 / VF9).
   + Tiêu cự tính toán: $f = \frac{1280 / 2}{\tan(25^\circ)} \approx 1372.5$ pixel.
   + Chiều cao đặt camera: $h_{\text{cam}} = 1.30\text{m}$ trên kính lái.
   + Đường chân trời: $y_{\text{horizon}} = 360$ pixel.
