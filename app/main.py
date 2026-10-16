@@ -74,7 +74,7 @@ def load_stress_metrics_json():
 
 
 def main():
-    st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/VinFast_VFe34_rear_view.png/320px-VinFast_VFe34_rear_view.png", use_container_width=True)
+    st.sidebar.image("data/vinfast_vfe34_rear.png", use_container_width=True)
     st.sidebar.title("VinFast Safety Assistant")
     st.sidebar.caption("Trợ lý Giám sát Bám đuôi & Va chạm Đội xe GSM / Xanh SM")
 
@@ -112,11 +112,8 @@ def main():
     else:
         uploaded_file = st.sidebar.file_uploader("Tải lên clip video (MP4, AVI, MOV):", type=["mp4", "avi", "mov", "mkv"])
         if uploaded_file is not None:
-            tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
-            tfile.write(uploaded_file.read())
-            target_video_path = tfile.name
-            temp_video_path = tfile.name
             default_hfov = 90.0
+            target_video_path = uploaded_file
         else:
             target_video_path = "data/sample_dashcam.mp4"
             default_hfov = 75.0
@@ -164,8 +161,16 @@ def main():
     # Các nút điều khiển
     st.sidebar.markdown("---")
     col_btn1, col_btn2 = st.sidebar.columns(2)
+    if "stream_stop_requested" not in st.session_state:
+        st.session_state.stream_stop_requested = False
+
+    def request_stop():
+        st.session_state.stream_stop_requested = True
+
     start_stream = col_btn1.button("▶️ Chạy Video", type="primary", use_container_width=True)
-    stop_stream = col_btn2.button("⏹️ Dừng", use_container_width=True)
+    col_btn2.button("⏹️ Dừng", use_container_width=True, on_click=request_stop)
+    if start_stream:
+        st.session_state.stream_stop_requested = False
 
     # Header chính
     st.title("🚗 VinFast Following-Distance & Collision-Time Assistant")
@@ -193,6 +198,13 @@ def main():
 
     # Xử lý Stream Video trực tiếp
     if start_stream:
+        if hasattr(target_video_path, "getvalue"):
+            suffix = os.path.splitext(target_video_path.name)[1].lower() or ".mp4"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tfile:
+                tfile.write(target_video_path.getvalue())
+                temp_video_path = tfile.name
+                target_video_path = temp_video_path
+
         # Xử lý nguồn video
         if is_live_stream:
             if target_video_path.isdigit():
@@ -214,29 +226,23 @@ def main():
             vehicle_width_m=vehicle_w,
             confidence_threshold=conf_thresh,
             use_kalman=use_kalman,
-            corridor_bottom_ratio=0.70,
-            corridor_top_ratio=0.20,
-            corridor_horizon_ratio=0.50
+            show_ego_corridor=show_ego_corridor
         )
 
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         frame_idx = 0
-        max_display_frames = 300  # Giới hạn số frame hiển thị mượt
+        total_video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if not is_live_stream else 0
+        progress_bar = st.progress(0) if total_video_frames > 0 else None
 
-        progress_bar = st.progress(0)
-        total_video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 300
-
+        processing_error = False
         try:
-            while cap.isOpened() and frame_idx < max_display_frames:
+            while cap.isOpened() and not st.session_state.stream_stop_requested:
                 ret, frame = cap.read()
                 if not ret:
                     break
 
-                t_curr = frame_idx / fps
+                t_curr = time.perf_counter() if is_live_stream else frame_idx / fps
                 annotated, targets, stats = pipeline.process_frame(frame, timestamp_s=t_curr)
-
-                if show_ego_corridor:
-                    annotated = pipeline.draw_ego_corridor(annotated)
 
                 # Cập nhật các thẻ Metric
                 pri = stats.get("primary_target")
@@ -278,10 +284,10 @@ def main():
                     metric_dist.metric("Cự ly Dọc Z", "--")
                     metric_vz.metric("Vận tốc Tương đối", "--")
                     metric_ttc.metric("Thời gian Va chạm (TTC)", "--")
-                    metric_alert.markdown("**Trạng thái Cảnh báo:**<br><div class='badge-safe'>✅ Không có xe phía trước</div>", unsafe_allow_html=True)
+                    metric_alert.markdown("**Trạng thái Cảnh báo:**<br><div class='badge-uncertain'>❔ Không xác định mục tiêu</div>", unsafe_allow_html=True)
 
                 # Thẻ 5: Sự kiện bám đuôi nguy hiểm
-                ev_count = len(pipeline.tailgating_events)
+                ev_count = len(pipeline.get_tailgating_events())
                 metric_events.metric("Bám đuôi Nguy hiểm", f"{ev_count} sự kiện", "≥1.0s nguy hiểm")
 
                 # Thẻ 6: Hiệu năng FPS / Latency
@@ -303,9 +309,11 @@ def main():
                     chart_placeholder.line_chart(df_chart, height=330)
 
                 frame_idx += 1
-                progress_bar.progress(min(1.0, frame_idx / total_video_frames))
+                if progress_bar is not None:
+                    progress_bar.progress(min(1.0, frame_idx / total_video_frames))
 
         except Exception as e:
+            processing_error = True
             st.error(f"Đã xảy ra sự cố khi xử lý video: {str(e)}")
         finally:
             cap.release()
@@ -315,16 +323,17 @@ def main():
                 except Exception:
                     pass
 
-        st.success(f"Đã hoàn thành phân tích video ({frame_idx} khung hình).")
+        if not processing_error:
+            st.success(f"Đã xử lý {frame_idx} khung hình.")
 
         # Xuất và tải báo cáo sự kiện
         csv_path = "results/events.csv"
         events_exported = pipeline.export_events_csv(csv_path)
-        if os.path.exists(csv_path):
+        if events_exported is not None and os.path.exists(csv_path):
             with open(csv_path, "r", encoding="utf-8") as f:
                 csv_bytes = f.read().encode("utf-8")
             st.download_button(
-                label=f"📥 Tải Báo cáo Sự kiện Bám đuôi Nguy hiểm ({len(events_exported)} sự kiện - CSV)",
+                label=f"📥 Tải Báo cáo Sự kiện Bám đuôi Nguy hiểm ({len(pipeline.get_tailgating_events())} sự kiện - CSV)",
                 data=csv_bytes,
                 file_name="tailgating_events.csv",
                 mime="text/csv"
