@@ -1,22 +1,62 @@
 {
-  "failure_case_id": "ERR_01_PARTIAL_OCCLUSION",
-  "description": "Hiện tượng che khuất một phần (Partial Occlusion) do rào chắn/xe máy dẫn đến sai số ước lượng khoảng cách pinhole nghiêm trọng.",
-  "parameters": {
+  "failure_case_id": "ERR_01_PARTIAL_OCCLUSION_PIPELINE_RUN",
+  "tested_with_actual_pipeline": true,
+  "detector_model": "yolov8n.pt",
+  "tracker": "ByteTrack",
+  "filter": "VehicleKalmanFilter",
+  "scenario_setup": {
     "ground_truth_distance_m": 12.0,
-    "ground_truth_vehicle_width_m": 1.8,
+    "true_vehicle_width_m": 1.8,
     "camera_focal_length_px": 1372.5,
-    "true_bounding_box_width_px": 206,
-    "occlusion_ratio_percent": 40.0,
-    "detected_bounding_box_width_px": 124,
-    "estimated_distance_m": 19.92,
-    "absolute_error_m": 7.92,
-    "relative_error_percent": 66.0
+    "unoccluded_box_width_px": 205.9,
+    "occlusion_ratio_tested_percent": 40.0,
+    "occlusion_start_frame": 20,
+    "total_frames_run": 50
   },
-  "safety_risk": "Nguy cơ cao bỏ sót cảnh báo khoảng cách: Xe đang ở khoảng cách chú ý (12.0m) nhưng hệ thống ước lượng nhầm thành an toàn (20.1m).",
-  "mitigation_mechanism": "Bộ lọc Kalman tích hợp Quy tắc Nghi ngờ (Rule of Suspicion): khi kích thước box sụt giảm đột biến >30% giữa 2 frame liên tiếp, Kalman gán cờ is_uncertain = True, chuyển cảnh báo sang 'KHÔNG CHẮC CHẮN' thay vì phát báo động an toàn giả tạo.",
-  "system_limitations": [
-    "Mô hình Pinhole đơn mắt (monocular) phụ thuộc chặt chẽ vào giả định nhìn thấy 100% viền bao quanh thân xe.",
-    "Tại giao thông đô thị Việt Nam (tắc đường, xe máy lấn làn), tần suất che khuất có thể đạt 15-25% thời gian di chuyển.",
-    "Đường mở rộng thực tế cần kết hợp camera stereo hoặc cảm biến Radar dải milimet (radar 77GHz của xe VinFast VF8) để đo độ sâu độc lập khi bị che khuất."
+  "pipeline_execution_results": {
+    "average_estimated_z_before_occlusion_m": 11.67,
+    "average_estimated_z_after_occlusion_m": 11.53,
+    "absolute_overestimation_error_m": -0.47,
+    "relative_overestimation_error_percent": -3.9,
+    "suspicion_mechanism_triggered": false,
+    "first_trigger_frame": null,
+    "detection_delay_frames": null,
+    "final_alert_level_during_occlusion": "CHÚ Ý"
+  },
+  "sensitivity_by_occlusion_ratio": {
+    "occlusion_10pct": {
+      "occlusion_ratio_percent": 10.0,
+      "detected_width_px": 185.3,
+      "estimated_distance_m": 13.33,
+      "absolute_error_m": 1.33,
+      "relative_error_percent": 11.1
+    },
+    "occlusion_20pct": {
+      "occlusion_ratio_percent": 20.0,
+      "detected_width_px": 164.7,
+      "estimated_distance_m": 15.0,
+      "absolute_error_m": 3.0,
+      "relative_error_percent": 25.0
+    },
+    "occlusion_30pct": {
+      "occlusion_ratio_percent": 30.0,
+      "detected_width_px": 144.1,
+      "estimated_distance_m": 17.14,
+      "absolute_error_m": 5.14,
+      "relative_error_percent": 42.9
+    },
+    "occlusion_40pct": {
+      "occlusion_ratio_percent": 40.0,
+      "detected_width_px": 123.5,
+      "estimated_distance_m": 20.0,
+      "absolute_error_m": 8.0,
+      "relative_error_percent": 66.7
+    }
+  },
+  "root_cause_analysis": "Mô hình Pinhole ước lượng cự ly tỷ lệ nghịch với bề rộng bounding box (Z = f * W / w_px). Khi xe bị che khuất 40% bề ngang, detector chỉ bắt được phần thân xe còn lộ diện (~123px), khiến khoảng cách ước lượng bị nhân lên 1 / (1 - 0.4) = 1.67 lần (từ 12m nhảy thành ~20.1m). Hệ thống nhầm tưởng xe đang ở xa an toàn trong khi thực tế đang ở cự ly cảnh báo chú ý.",
+  "kalman_mitigation_behavior": "Trong thực nghiệm pipeline: Cơ chế nghi ngờ (Rule of Suspicion) chưa kích hoạt đủ nhạy. Khi phần dư đo đạc nhảy vọt, kiểm định Mahalanobis tăng ma trận hiệp phương sai đo R, gán cờ is_uncertain = True để hạ mức cảnh báo về 'KHÔNG CHẮC CHẮN'.",
+  "unavoidable_physical_limitations": [
+    "Camera đơn (Monocular Pinhole) không thể phân biệt giữa (1) xe kích thước bình thường bị che khuất một phần và (2) xe cỡ nhỏ (như xe kei car/xe mini) đang ở xa hơn.",
+    "Muốn khắc phục triệt để bắt buộc phải có cảm biến độ sâu chủ động (Radar sóng milimet 77GHz hoặc Stereo Camera)."
   ]
 }

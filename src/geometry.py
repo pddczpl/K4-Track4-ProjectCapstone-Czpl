@@ -51,12 +51,28 @@ class PinholeGeometry:
         self.image_height = image_height
         self.hfov_deg = hfov_deg
         self.camera_height_m = camera_height_m
+        self.horizon_ratio = horizon_ratio
         self.horizon_y = image_height * horizon_ratio
+        self._ref_width = float(image_width)
+        self._fixed_focal_length_ref = float(focal_length_px) if focal_length_px is not None and focal_length_px > 0 else None
 
-        if focal_length_px is not None and focal_length_px > 0:
-            self.focal_length_px = float(focal_length_px)
+        if self._fixed_focal_length_ref is not None:
+            self.focal_length_px = self._fixed_focal_length_ref
         else:
             self.focal_length_px = self.calculate_focal_length(image_width, hfov_deg)
+
+    def update_resolution(self, width: int, height: int) -> None:
+        """Cập nhật độ phân giải khung hình và tự động co giãn tiêu cự f tỉ lệ thuận."""
+        if width <= 0 or height <= 0:
+            return
+        self.image_width = width
+        self.image_height = height
+        self.horizon_y = height * self.horizon_ratio
+
+        if self._fixed_focal_length_ref is not None:
+            self.focal_length_px = float(self._fixed_focal_length_ref * (width / self._ref_width))
+        else:
+            self.focal_length_px = self.calculate_focal_length(width, self.hfov_deg)
 
     @staticmethod
     def calculate_focal_length(image_width: int, hfov_deg: float) -> float:

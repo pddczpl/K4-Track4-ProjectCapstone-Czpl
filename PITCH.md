@@ -50,12 +50,12 @@ gantt
 #### A. 1 Số đo kiểm chứng được (`results/metrics.json` — 300 khung hình mô phỏng)
 Báo cáo đầy đủ mọi dải đo, **không giấu số xấu**:
 
-| Dải cự ly kiểm thử | Số mẫu | Tỷ lệ nhận diện | MAE Đo thô (Raw) | MAE Kalman Filter | RMSE Kalman | So sánh MAE (Kalman vs Raw) |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Toàn bộ hành trình** | **300** | **100.0%** | **0.618 m** | **0.683 m** | **0.875 m** | **Kalman TỆ HƠN 10.5%** |
-| **5 – 10m (Nguy hiểm)** | 104 | 100.0% | **0.071 m** | **0.347 m** | 0.406 m | **Kalman TỆ HƠN 392.2%** |
-| **10 – 20m (Chú ý)** | 105 | 100.0% | 0.486 m | **0.434 m** | 0.508 m | **Kalman CẢI THIỆN 10.6%** |
-| **20 – 40m (Xa/An toàn)** | 91 | 100.0% | 1.397 m | **1.355 m** | 1.427 m | **Kalman CẢI THIỆN 3.0%** |
+| Dải cự ly kiểm thử | Số mẫu | Tỷ lệ nhận diện | MAE Đo thô (Raw) | RMSE Đo thô (Raw) | MAE Kalman Filter | RMSE Kalman | So sánh MAE (Kalman vs Raw) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Toàn bộ hành trình** | **300** | **100.0%** | **0.618 m** | **0.908 m** | **0.683 m** | **0.875 m** | **Kalman TỆ HƠN 10.5%** |
+| **5 – 10m (Nguy hiểm)** | 104 | 100.0% | **0.071 m** | 0.095 m | **0.347 m** | 0.406 m | **Kalman TỆ HƠN 392.2%** |
+| **10 – 20m (Chú ý)** | 105 | 100.0% | 0.486 m | 0.643 m | **0.434 m** | 0.508 m | **Kalman CẢI THIỆN 10.6%** |
+| **20 – 40m (Xa/An toàn)** | 91 | 100.0% | 1.397 m | 1.494 m | **1.355 m** | 1.427 m | **Kalman CẢI THIỆN 3.0%** |
 
 - **Giải thích trung thực vì sao Kalman tệ hơn ở dải 5–10m:**
   + Trong mô phỏng, xe phanh gấp từ $-5.0$ m/s rồi dừng/giữ cự ly ở 6.5m. Bộ lọc Kalman dùng mô hình chuyển động vận tốc tuyến tính ($F = \begin{bmatrix} 1 & \Delta t \\ 0 & 1 \end{bmatrix}$) nên gặp hiện tượng **độ trễ pha (phase lag)** khi vật thể đổi gia tốc đột ngột.

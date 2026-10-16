@@ -1,0 +1,82 @@
+{
+  "ideal_baseline": {
+    "name": "Mô phỏng lý tưởng (Ideal)",
+    "valid_frames": 300,
+    "raw_mae_m": 0.087,
+    "raw_rmse_m": 0.145,
+    "kalman_mae_m": 0.165,
+    "kalman_rmse_m": 0.242,
+    "variance_reduction_percent": -133.3,
+    "relative_error_percent": 1.1
+  },
+  "stress_small_car_1.65m": {
+    "name": "Xe cỡ nhỏ (W=1.65m vs prior 1.80m)",
+    "valid_frames": 300,
+    "raw_mae_m": 1.369,
+    "raw_rmse_m": 1.533,
+    "kalman_mae_m": 1.258,
+    "kalman_rmse_m": 1.497,
+    "variance_reduction_percent": -37.7,
+    "relative_error_percent": 8.3
+  },
+  "stress_large_suv_1.95m": {
+    "name": "Xe SUV lớn (W=1.95m vs prior 1.80m)",
+    "valid_frames": 300,
+    "raw_mae_m": 1.174,
+    "raw_rmse_m": 1.326,
+    "kalman_mae_m": 1.272,
+    "kalman_rmse_m": 1.364,
+    "variance_reduction_percent": 36.3,
+    "relative_error_percent": 8.4
+  },
+  "stress_focal_error_plus5pct": {
+    "name": "Sai lệch tiêu cự f (+5%)",
+    "valid_frames": 300,
+    "raw_mae_m": 0.745,
+    "raw_rmse_m": 0.857,
+    "kalman_mae_m": 0.678,
+    "kalman_rmse_m": 0.823,
+    "variance_reduction_percent": -20.7,
+    "relative_error_percent": 4.5
+  },
+  "stress_focal_error_plus10pct": {
+    "name": "Sai lệch tiêu cự f (+10%)",
+    "valid_frames": 300,
+    "raw_mae_m": 1.511,
+    "raw_rmse_m": 1.701,
+    "kalman_mae_m": 1.396,
+    "kalman_rmse_m": 1.661,
+    "variance_reduction_percent": -32.5,
+    "relative_error_percent": 9.2
+  },
+  "stress_pitch_vibration_15px": {
+    "name": "Nhún xe / rung kính lái (+-15px pitch)",
+    "valid_frames": 300,
+    "raw_mae_m": 0.231,
+    "raw_rmse_m": 0.394,
+    "kalman_mae_m": 0.194,
+    "kalman_rmse_m": 0.264,
+    "variance_reduction_percent": 68.3,
+    "relative_error_percent": 1.3
+  },
+  "stress_detector_jitter_and_drops": {
+    "name": "Nhiễu box detector (+-3px) & rớt 3% frames",
+    "valid_frames": 289,
+    "raw_mae_m": 0.272,
+    "raw_rmse_m": 0.461,
+    "kalman_mae_m": 0.194,
+    "kalman_rmse_m": 0.268,
+    "variance_reduction_percent": 75.4,
+    "relative_error_percent": 1.3
+  },
+  "stress_mild_occlusion_15pct": {
+    "name": "Che khuất nhẹ 15% bề rộng thân xe",
+    "valid_frames": 300,
+    "raw_mae_m": 2.699,
+    "raw_rmse_m": 3.042,
+    "kalman_mae_m": 2.575,
+    "kalman_rmse_m": 2.985,
+    "variance_reduction_percent": -15.8,
+    "relative_error_percent": 17.0
+  }
+}
