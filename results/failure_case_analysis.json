@@ -1,0 +1,22 @@
+{
+  "failure_case_id": "ERR_01_PARTIAL_OCCLUSION",
+  "description": "Hiện tượng che khuất một phần (Partial Occlusion) do rào chắn/xe máy dẫn đến sai số ước lượng khoảng cách pinhole nghiêm trọng.",
+  "parameters": {
+    "ground_truth_distance_m": 12.0,
+    "ground_truth_vehicle_width_m": 1.8,
+    "camera_focal_length_px": 1372.5,
+    "true_bounding_box_width_px": 206,
+    "occlusion_ratio_percent": 40.0,
+    "detected_bounding_box_width_px": 124,
+    "estimated_distance_m": 19.92,
+    "absolute_error_m": 7.92,
+    "relative_error_percent": 66.0
+  },
+  "safety_risk": "Nguy cơ cao bỏ sót cảnh báo khoảng cách: Xe đang ở khoảng cách chú ý (12.0m) nhưng hệ thống ước lượng nhầm thành an toàn (20.1m).",
+  "mitigation_mechanism": "Bộ lọc Kalman tích hợp Quy tắc Nghi ngờ (Rule of Suspicion): khi kích thước box sụt giảm đột biến >30% giữa 2 frame liên tiếp, Kalman gán cờ is_uncertain = True, chuyển cảnh báo sang 'KHÔNG CHẮC CHẮN' thay vì phát báo động an toàn giả tạo.",
+  "system_limitations": [
+    "Mô hình Pinhole đơn mắt (monocular) phụ thuộc chặt chẽ vào giả định nhìn thấy 100% viền bao quanh thân xe.",
+    "Tại giao thông đô thị Việt Nam (tắc đường, xe máy lấn làn), tần suất che khuất có thể đạt 15-25% thời gian di chuyển.",
+    "Đường mở rộng thực tế cần kết hợp camera stereo hoặc cảm biến Radar dải milimet (radar 77GHz của xe VinFast VF8) để đo độ sâu độc lập khi bị che khuất."
+  ]
+}

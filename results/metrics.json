@@ -1,0 +1,51 @@
+{
+  "overall": {
+    "total_frames_evaluated": 300,
+    "detection_rate_percent": 100.0,
+    "raw_mae_m": 0.618,
+    "raw_rmse_m": 0.908,
+    "kalman_mae_m": 0.683,
+    "kalman_rmse_m": 0.875,
+    "mae_improvement_percent": -10.5,
+    "variance_reduction_percent": 30.2,
+    "ttc_mae_s": 1.39,
+    "ttc_rmse_s": 2.73
+  },
+  "by_distance_range": {
+    "range_5_10m": {
+      "num_samples": 104,
+      "raw_mae_m": 0.071,
+      "raw_rmse_m": 0.095,
+      "kalman_mae_m": 0.347,
+      "kalman_rmse_m": 0.406,
+      "mae_improvement_percent": -392.2
+    },
+    "range_10_20m": {
+      "num_samples": 105,
+      "raw_mae_m": 0.486,
+      "raw_rmse_m": 0.643,
+      "kalman_mae_m": 0.434,
+      "kalman_rmse_m": 0.508,
+      "mae_improvement_percent": 10.6
+    },
+    "range_20_40m": {
+      "num_samples": 91,
+      "raw_mae_m": 1.397,
+      "raw_rmse_m": 1.494,
+      "kalman_mae_m": 1.355,
+      "kalman_rmse_m": 1.427,
+      "mae_improvement_percent": 3.0
+    }
+  },
+  "timing_latency": {
+    "fps": 46.5,
+    "latency_mean_ms": 21.51,
+    "latency_p50_ms": 20.95,
+    "latency_p95_ms": 25.5,
+    "stage_breakdown_ms": {
+      "track": 19.85,
+      "geometry_kalman": 0.06,
+      "render": 1.59
+    }
+  }
+}
