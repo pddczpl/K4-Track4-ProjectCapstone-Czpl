@@ -125,7 +125,7 @@ def main():
     cam_preset = st.sidebar.selectbox(
         "Cấu hình Camera:",
         [
-            "VinFast ADAS Forward Camera (HFOV 50°, f ≈ 1372px)",
+            "Mô phỏng ADAS (HFOV 50° giả định, f ≈ 1372px)",
             "Dashcam chuẩn (HFOV 90°, f ≈ 640px)",
             "Dashcam góc rộng (HFOV 120°, f ≈ 369px)",
             "Tùy chỉnh góc nhìn / tiêu cự"
@@ -133,7 +133,7 @@ def main():
         index=0 if "Mô phỏng" in video_source_option or "Backup" in video_source_option else 1
     )
 
-    if cam_preset.startswith("VinFast"):
+    if cam_preset.startswith("Mô phỏng ADAS"):
         selected_hfov = 50.0
     elif "90°" in cam_preset:
         selected_hfov = 90.0
