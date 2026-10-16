@@ -7,6 +7,7 @@ Mục đích:
   đảm bảo pipeline hoạt động liên tục ngay cả khi ByteTrack chưa khởi tạo xong hoặc bị ngắt quãng.
 """
 
+import os
 from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 from ultralytics import YOLO
@@ -35,7 +36,18 @@ class VehicleTracker:
         confidence_threshold: float = 0.35,
         device: str = "cpu"
     ):
-        self.model = model if model is not None else YOLO("yolov8n.pt")
+        if model is None:
+            pkg_model = os.path.join(os.path.dirname(__file__), "..", "models", "yolov8n.pt")
+            cwd_model = os.path.join("models", "yolov8n.pt")
+            if os.path.exists(pkg_model):
+                model_path = os.path.abspath(pkg_model)
+            elif os.path.exists(cwd_model):
+                model_path = os.path.abspath(cwd_model)
+            else:
+                model_path = "yolov8n.pt"
+            self.model = YOLO(model_path)
+        else:
+            self.model = model
         self.confidence_threshold = confidence_threshold
         self.device = device
         self.target_classes = list(TARGET_COCO_CLASSES.keys())

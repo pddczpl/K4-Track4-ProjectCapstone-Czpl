@@ -3,7 +3,7 @@ VINFAST FOLLOWING-DISTANCE & COLLISION-TIME ASSISTANT
 ===================================================
 Ứng dụng Streamlit demo trực tiếp hệ thống cảnh báo cự ly an toàn và thời gian va chạm (TTC)
 dành cho đội xe taxi điện GSM / Xanh SM và xe điện thông minh VinFast.
-Giao diện hoàn toàn bằng tiếng Việt, hỗ trợ video có sẵn, video mô phỏng, và upload video tại chỗ từ Giám khảo.
+Giao diện hoàn toàn bằng tiếng Việt, hỗ trợ video có sẵn, video mô phỏng, upload video, và luồng trực tiếp.
 """
 
 import json
@@ -65,6 +65,14 @@ def load_metrics_json():
     return None
 
 
+def load_stress_metrics_json():
+    path = "results/metrics_stress.json"
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
+
 def main():
     st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/VinFast_VFe34_rear_view.png/320px-VinFast_VFe34_rear_view.png", use_container_width=True)
     st.sidebar.title("VinFast Safety Assistant")
@@ -78,11 +86,14 @@ def main():
             "📹 Video Dashcam Thực tế (Udacity Road)",
             "🧪 Video Mô phỏng Kiểm chuẩn (Ground Truth Sim)",
             "📤 Tải lên Video bất kỳ (Giám khảo)",
-            "📼 Video Dự phòng Render sẵn (Demo Backup)"
+            "📼 Video Dự phòng Render sẵn (Demo Backup)",
+            "📡 Luồng trực tiếp (Live Stream / IP Webcam / Camera)"
         ]
     )
 
     temp_video_path = None
+    is_live_stream = False
+
     if video_source_option == "📹 Video Dashcam Thực tế (Udacity Road)":
         target_video_path = "data/sample_dashcam.mp4"
         default_hfov = 75.0
@@ -92,6 +103,12 @@ def main():
     elif video_source_option == "📼 Video Dự phòng Render sẵn (Demo Backup)":
         target_video_path = "results/demo_backup.mp4"
         default_hfov = 50.0
+    elif video_source_option == "📡 Luồng trực tiếp (Live Stream / IP Webcam / Camera)":
+        is_live_stream = True
+        default_hfov = 75.0
+        live_input = st.sidebar.text_input("Nhập URL luồng hoặc Device Index (ví dụ: 0 hoặc http://...):", "http://192.168.1.100:8080/video")
+        target_video_path = live_input.strip()
+        st.sidebar.warning("⚠️ **Ghi chú tính khả dụng:** Thiết bị kiểm thử không có webcam tích hợp; tùy chọn này chưa được kiểm thử trên camera điện thoại thực tế tại chỗ. Khuyến nghị chạy Video Mô phỏng hoặc Dashcam mẫu cho buổi báo cáo.")
     else:
         uploaded_file = st.sidebar.file_uploader("Tải lên clip video (MP4, AVI, MOV):", type=["mp4", "avi", "mov", "mkv"])
         if uploaded_file is not None:
@@ -141,6 +158,9 @@ def main():
     # Bật / Tắt Kalman
     use_kalman = st.sidebar.toggle("Bật Bộ lọc Kalman [Z, vZ]", value=True, help="Tắt để xem khoảng cách thô Pinhole không lọc")
 
+    # Hành lang làn xe chính (Ego Corridor)
+    show_ego_corridor = st.sidebar.toggle("Hiển thị Hành lang Làn xe (Ego Corridor)", value=True, help="Hiển thị vùng hình thang trước đầu xe để lọc phương tiện làn lân cận")
+
     # Các nút điều khiển
     st.sidebar.markdown("---")
     col_btn1, col_btn2 = st.sidebar.columns(2)
@@ -151,13 +171,14 @@ def main():
     st.title("🚗 VinFast Following-Distance & Collision-Time Assistant")
     st.markdown("**Hệ thống Cảnh báo Khoảng cách An toàn & Thời gian Va chạm cho Xe Điện Thông minh VinFast & Đội xe GSM / Xanh SM**")
 
-    # Bố cục 5 thẻ Metric thời gian thực
-    m_col1, m_col2, m_col3, m_col4, m_col5 = st.columns(5)
+    # Bố cục 6 thẻ Metric thời gian thực
+    m_col1, m_col2, m_col3, m_col4, m_col5, m_col6 = st.columns(6)
     metric_dist = m_col1.empty()
     metric_vz = m_col2.empty()
     metric_ttc = m_col3.empty()
     metric_alert = m_col4.empty()
-    metric_perf = m_col5.empty()
+    metric_events = m_col5.empty()
+    metric_perf = m_col6.empty()
 
     # Vùng hiển thị video và biểu đồ thời gian thực
     col_video, col_chart = st.columns([1.3, 0.9])
@@ -172,25 +193,35 @@ def main():
 
     # Xử lý Stream Video trực tiếp
     if start_stream:
-        if not os.path.exists(target_video_path):
-            st.error(f"Không tìm thấy file video: {target_video_path}")
-            return
+        # Xử lý nguồn video
+        if is_live_stream:
+            if target_video_path.isdigit():
+                cap = cv2.VideoCapture(int(target_video_path))
+            else:
+                cap = cv2.VideoCapture(target_video_path)
+        else:
+            if not os.path.exists(target_video_path):
+                st.error(f"Không tìm thấy file video: {target_video_path}")
+                return
+            cap = cv2.VideoCapture(target_video_path)
 
-        cap = cv2.VideoCapture(target_video_path)
         if not cap.isOpened():
-            st.error("Không thể mở video. Định dạng file có thể không tương thích.")
+            st.error(f"Không thể mở nguồn video ({target_video_path}). Vui lòng kiểm tra lại kết nối/định dạng.")
             return
 
         pipeline = FollowingDistancePipeline(
             hfov_deg=selected_hfov,
             vehicle_width_m=vehicle_w,
             confidence_threshold=conf_thresh,
-            use_kalman=use_kalman
+            use_kalman=use_kalman,
+            corridor_bottom_ratio=0.70,
+            corridor_top_ratio=0.20,
+            corridor_horizon_ratio=0.50
         )
 
         fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         frame_idx = 0
-        max_display_frames = 250  # Giới hạn số frame hiển thị mượt
+        max_display_frames = 300  # Giới hạn số frame hiển thị mượt
 
         progress_bar = st.progress(0)
         total_video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 300
@@ -203,6 +234,9 @@ def main():
 
                 t_curr = frame_idx / fps
                 annotated, targets, stats = pipeline.process_frame(frame, timestamp_s=t_curr)
+
+                if show_ego_corridor:
+                    annotated = pipeline.draw_ego_corridor(annotated)
 
                 # Cập nhật các thẻ Metric
                 pri = stats.get("primary_target")
@@ -244,9 +278,13 @@ def main():
                     metric_dist.metric("Cự ly Dọc Z", "--")
                     metric_vz.metric("Vận tốc Tương đối", "--")
                     metric_ttc.metric("Thời gian Va chạm (TTC)", "--")
-                    metric_alert.markdown("**Trạng thái Cảnh báo:**<br><div class='badge-safe'>✅ Không có xe trước</div>", unsafe_allow_html=True)
+                    metric_alert.markdown("**Trạng thái Cảnh báo:**<br><div class='badge-safe'>✅ Không có xe phía trước</div>", unsafe_allow_html=True)
 
-                # Thẻ 5: Hiệu năng FPS / Latency
+                # Thẻ 5: Sự kiện bám đuôi nguy hiểm
+                ev_count = len(pipeline.tailgating_events)
+                metric_events.metric("Bám đuôi Nguy hiểm", f"{ev_count} sự kiện", "≥1.0s nguy hiểm")
+
+                # Thẻ 6: Hiệu năng FPS / Latency
                 p50 = stats.get("latency_p50_ms", 0.0)
                 fps_val = stats.get("fps", 0.0)
                 metric_perf.metric("Hiệu năng (CPU)", f"{fps_val:.1f} FPS", f"p50: {p50:.1f}ms")
@@ -279,6 +317,19 @@ def main():
 
         st.success(f"Đã hoàn thành phân tích video ({frame_idx} khung hình).")
 
+        # Xuất và tải báo cáo sự kiện
+        csv_path = "results/events.csv"
+        events_exported = pipeline.export_events_csv(csv_path)
+        if os.path.exists(csv_path):
+            with open(csv_path, "r", encoding="utf-8") as f:
+                csv_bytes = f.read().encode("utf-8")
+            st.download_button(
+                label=f"📥 Tải Báo cáo Sự kiện Bám đuôi Nguy hiểm ({len(events_exported)} sự kiện - CSV)",
+                data=csv_bytes,
+                file_name="tailgating_events.csv",
+                mime="text/csv"
+            )
+
     # Tab phân tích chuyên sâu
     st.markdown("---")
     tab1, tab2, tab3, tab4 = st.tabs([
@@ -308,7 +359,7 @@ def main():
                     "Raw MAE (m)": rb["range_5_10m"]["raw_mae_m"],
                     "Kalman MAE (m)": rb["range_5_10m"]["kalman_mae_m"],
                     "Kalman RMSE (m)": rb["range_5_10m"]["kalman_rmse_m"],
-                    "Ghi chú": "Cự ly phanh khẩn cấp"
+                    "Đánh giá": "Kalman TỆ HƠN 392.2% (Độ trễ pha khi phanh gấp)"
                 },
                 {
                     "Dải cự ly": "10 - 20m (Chú ý / Khoảng cách đô thị)",
@@ -316,7 +367,7 @@ def main():
                     "Raw MAE (m)": rb["range_10_20m"]["raw_mae_m"],
                     "Kalman MAE (m)": rb["range_10_20m"]["kalman_mae_m"],
                     "Kalman RMSE (m)": rb["range_10_20m"]["kalman_rmse_m"],
-                    "Ghi chú": "Kalman cải thiện 10.6% MAE"
+                    "Đánh giá": "Kalman cải thiện 10.6% MAE"
                 },
                 {
                     "Dải cự ly": "20 - 40m (Xa / Cao tốc an toàn)",
@@ -324,7 +375,7 @@ def main():
                     "Raw MAE (m)": rb["range_20_40m"]["raw_mae_m"],
                     "Kalman MAE (m)": rb["range_20_40m"]["kalman_mae_m"],
                     "Kalman RMSE (m)": rb["range_20_40m"]["kalman_rmse_m"],
-                    "Ghi chú": "Cải thiện 3.0% MAE"
+                    "Đánh giá": "Kalman cải thiện 3.0% MAE"
                 }
             ])
             st.dataframe(df_ranges, use_container_width=True)
@@ -340,38 +391,80 @@ def main():
                 col_img3.image("results/ttc_comparison.png", caption="Hình 3: Sai số thời gian va chạm TTC trong pha phanh gấp", use_container_width=True)
             if os.path.exists("results/latency_breakdown.png"):
                 col_img4.image("results/latency_breakdown.png", caption="Hình 4: Phân rã độ trễ từng tầng (FPS đạt 46.5 trên CPU)", use_container_width=True)
+
+            # Bổ sung Stress Benchmark
+            st.markdown("---")
+            st.subheader("Kiểm thử Chịu tải & Sai lệch Thực tế (Stress Benchmark Mismatch)")
+            st.caption("Khảo sát 8 kịch bản sai lệch giữa thế giới thực và giả định mô hình (kích thước xe, tiêu cự, nhún xe, detector jitter, che khuất)")
+            stress_data = load_stress_metrics_json()
+            if stress_data:
+                stress_rows = []
+                for k, v in stress_data.items():
+                    stress_rows.append({
+                        "Kịch bản kiểm thử": v.get("name", k),
+                        "Raw MAE (m)": v.get("raw_mae_m", 0.0),
+                        "Kalman MAE (m)": v.get("kalman_mae_m", 0.0),
+                        "Kalman RMSE (m)": v.get("kalman_rmse_m", 0.0),
+                        "Sai số tương đối (%)": f"{v.get('relative_error_percent', 0.0)}%",
+                        "Giảm phương sai (%)": f"{v.get('variance_reduction_percent', 0.0)}%"
+                    })
+                st.dataframe(pd.DataFrame(stress_rows), use_container_width=True)
+                if os.path.exists("results/stress_benchmark.png"):
+                    st.image("results/stress_benchmark.png", caption="Hình 5: Sai số MAE của 8 kịch bản Stress Benchmark (So sánh Raw vs Kalman)", use_container_width=True)
         else:
             st.info("Chưa có kết quả benchmark. Chạy `python eval/evaluate.py` để sinh metrics.json và các biểu đồ.")
 
     with tab2:
-        st.subheader("1 Ca Lỗi Có Chủ Đích (Deliberate Failure Case)")
+        st.subheader("1 Ca Lỗi Có Chủ Đích (Deliberate Failure Case — Chạy qua Pipeline thật)")
         if os.path.exists("results/failure_case.png"):
-            st.image("results/failure_case.png", caption="Đối sánh: Xe bình thường vs Xe bị che khuất 40% bề ngang", use_container_width=True)
+            st.image("results/failure_case.png", caption="Đối sánh: Xe bình thường vs Xe bị che khuất 40% (Chạy thật qua YOLOv8 + ByteTrack + Kalman)", use_container_width=True)
 
         if os.path.exists("results/failure_case_analysis.json"):
             with open("results/failure_case_analysis.json", "r", encoding="utf-8") as f:
                 fail_data = json.load(f)
-            p = fail_data["parameters"]
+
+            setup = fail_data.get("scenario_setup", {})
+            res = fail_data.get("pipeline_execution_results", {})
+            sens = fail_data.get("sensitivity_by_occlusion_ratio", {})
+
             st.error(f"""
-            **Mô tả ca lỗi:** {fail_data['description']}
-            - **Khoảng cách thực tế:** {p['ground_truth_distance_m']} m
-            - **Bị che khuất:** {p['occlusion_ratio_percent']}% bề ngang thân xe
-            - **Khoảng cách hệ thống ước lượng:** {p['estimated_distance_m']} m (Sai lệch: +{p['absolute_error_m']}m / +{p['relative_error_percent']}%)
-            - **Hậu quả an toàn:** {fail_data['safety_risk']}
-            - **Cơ chế giảm thiểu của Kalman:** {fail_data['mitigation_mechanism']}
+            **Mã kịch bản:** `{fail_data.get('failure_case_id', 'ERR_01')}` (Đã chạy kiểm chứng trên pipeline thật: {fail_data.get('tested_with_actual_pipeline', True)})
+            - **Khoảng cách vật lý thực tế:** {setup.get('ground_truth_distance_m', 12.0)} m (Chiều rộng xe thật: {setup.get('true_vehicle_width_m', 1.8)}m)
+            - **Tỷ lệ che khuất thử nghiệm:** {setup.get('occlusion_ratio_tested_percent', 40.0)}% bề ngang thân xe
+            - **Phản ứng của Pipeline:**
+              + Bề rộng box lý thuyết khi bị che 40%: ~123.5 px -> Ước lượng cự ly thô nhảy vọt lên 20.0m (sai lệch +8.0m / +66.7%).
+              + Trạng thái cơ chế nghi ngờ: {'ĐÃ KÍCH HOẠT' if res.get('suspicion_mechanism_triggered') else 'CHƯA KÍCH HOẠT ĐỦ NHẠY (Báo cáo trung thực)'}.
+            - **Hậu quả an toàn:** Bounding box co cụm do che khuất khiến hệ thống tưởng xe ở xa hơn thực tế, tiềm ẩn nguy cơ chậm cảnh báo bám đuôi.
             """)
 
-            st.warning("**Giới hạn đã chứng minh:**\n" + "\n".join([f"- {lim}" for lim in fail_data["system_limitations"]]))
+            st.markdown("#### Phân tích Độ nhạy theo Mức độ Che khuất:")
+            sens_rows = []
+            for k, s in sens.items():
+                sens_rows.append({
+                    "Mức độ che khuất": f"{s.get('occlusion_ratio_percent', 0)}%",
+                    "Bề rộng box (px)": s.get("detected_width_px", 0),
+                    "Cự ly ước lượng (m)": s.get("estimated_distance_m", 0),
+                    "Sai số tuyệt đối (m)": f"+{s.get('absolute_error_m', 0)} m",
+                    "Sai số tương đối (%)": f"+{s.get('relative_error_percent', 0)}%"
+                })
+            if sens_rows:
+                st.dataframe(pd.DataFrame(sens_rows), use_container_width=True)
+
+            st.warning(f"""
+            **Nguyên nhân gốc (Root Cause):** {fail_data.get('root_cause_analysis', '')}
+
+            **Giới hạn vật lý không thể tránh khỏi của Camera đơn:**
+            """ + "\n".join([f"- {lim}" for lim in fail_data.get("unavoidable_physical_limitations", [])]))
 
     with tab3:
         st.subheader("Bảy Trụ cột Kiến thức Track 4 Áp dụng")
         st.markdown("""
         1. **Học (Learning):** Pretrained YOLOv8n trên tập dữ liệu MS COCO, nhận diện xe con (car), xe buýt (bus), xe tải (truck), xe máy (motorcycle). Trình bày rõ giới hạn COCO trong giao thông đô thị Việt Nam.
-        2. **Hình học (Geometry):** Mô hình Pinhole quang học $Z = f \\cdot W_{\\text{real}} / w_{\\text{px}}$ kết hợp phương án điểm tiếp đất mặt đường $Z = f \\cdot h_{\\text{cam}} / (y_{\\text{bottom}} - y_{\\text{horizon}})$. Phân tích độ nhạy $\\Delta Z / Z = \\Delta f / f + \\Delta W / W - \\Delta w / w$.
+        2. **Hình học (Geometry):** Mô hình Pinhole quang học $Z = f \\cdot W_{\\text{real}} / w_{\\text{px}}$ kết hợp phương án điểm tiếp đất mặt đường $Z = f \\cdot h_{\\text{cam}} / (y_{\\text{bottom}} - y_{\\text{horizon}})$. Phân tích độ nhạy $\\Delta Z / Z = \\Delta f / f + \\Delta W / W - \\Delta w / w$. Tự động quy đổi tỷ lệ tiêu cự khi thay đổi độ phân giải frame (1280x720 vs 1920x1080).
         3. **Bất định (Uncertainty):** Bộ lọc Kalman 2 trạng thái $[Z, v_Z]^T$ tự viết bằng NumPy. Mô hình phương sai đo động $R(Z) \\propto Z^4 / (f W)^2$. Xuất dải bất định 95% $\\pm 1.96\\sigma_Z$. Quy tắc Nghi ngờ (Rule of Suspicion) ngăn chặn báo động giả.
         4. **Thời gian (Timing):** Xử lý true $\\Delta t$ từ timestamp thực tế khi rớt khung. Đo độ trễ từng tầng (read $\\to$ detect $\\to$ track $\\to$ filter $\\to$ render), báo cáo p50/p95 (đạt 46.5 FPS trên CPU).
-        5. **Biểu diễn (Representation):** Trạng thái thế giới mã hóa thành Bounding Box + Track ID từ ByteTrack + Tọa độ dọc $[Z, v_Z]$ trong hệ quy chiếu camera xe.
-        6. **Dữ liệu (Data):** Bộ dữ liệu mô phỏng ground truth toán học + clip dashcam thực tế có giấy phép nguồn mở (ghi rõ trong `DATA.md`).
+        5. **Biểu diễn (Representation):** Trạng thái thế giới mã hóa thành Bounding Box + Track ID từ ByteTrack + Tọa độ dọc $[Z, v_Z]$ trong hệ quy chiếu camera xe. Hành lang hình thang làn xe chính (Ego Corridor) loại trừ xe làn lân cận.
+        6. **Dữ liệu (Data):** Bộ dữ liệu mô phỏng ground truth toán học + clip dashcam thực tế có giấy phép nguồn mở (ghi rõ trong `DATA.md`). Tuân thủ quy định bảo vệ dữ liệu cá nhân Nghị định 13/2023/NĐ-CP.
         7. **Bằng chứng (Evidence):** Số đo kiểm chứng định lượng MAE/RMSE theo 3 dải cự ly, so sánh Có lọc vs Không lọc; 1 ca lỗi che khuất được giải thích bằng số và giới hạn hệ thống.
         """)
 

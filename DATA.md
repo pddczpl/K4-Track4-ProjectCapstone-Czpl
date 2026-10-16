@@ -61,3 +61,24 @@
   5. `ttc_true_s`: Thời gian va chạm lý thuyết ($Z / (-v_Z)$, giây).
   6. `gt_x1, gt_y1, gt_x2, gt_y2`: Tọa độ hộp bao bounding box pixel lý thuyết theo hình chiếu phối cảnh Pinhole.
   7. `gt_w_px, gt_h_px`: Chiều rộng và chiều cao pixel lý thuyết.
+
+---
+
+### 4. Quyền Riêng Tư & Xử Lý Dữ Liệu Bên Thứ Ba (Privacy & Anonymization)
+- **Bản chất video đường phố (Dashcam):** Video ghi hình thực tế khi tham gia giao thông tiềm ẩn khả năng xuất hiện biển kiểm soát xe cơ giới và khuôn mặt người đi đường.
+- **Hiện trạng trong tập dữ liệu thử nghiệm:**
+  + Video `data/sample_dashcam.mp4` được trích từ tập dữ liệu nghiên cứu công khai của Udacity trên đường cao tốc nước ngoài; góc quay rộng, các phương tiện khác ở khoảng cách xa (>12m), không zoom cận cảnh danh tính cá nhân.
+- **Biện pháp kỹ thuật bắt buộc khi triển khai thương mại (Nghị định 13/2023/NĐ-CP):**
+  + Khi tích hợp trên đội xe GSM / Xanh SM thực tế tại Việt Nam, luồng video dashcam trước khi lưu trữ đám mây hoặc truyền về trung tâm điều hành bắt buộc phải đi qua module làm mờ tự động (auto-blurring) biển số và nhận diện khuôn mặt người tham gia giao thông.
+  + Toàn bộ phép tính cự ly $Z$ và TTC được thực hiện hoàn toàn tại biên (Edge / On-device) trên frame bộ nhớ RAM mà không cần gửi hình ảnh thô chưa che giấu về máy chủ trung tâm.
+
+---
+
+### 5. Nguồn Gốc Bản Quyền Hình Ảnh Xe & Phương Án Dự Phòng (Vehicle Asset Rights)
+- **Ảnh mẫu `data/vinfast_vfe34_rear.png`:**
+  + Xuất xứ: Ảnh chụp đuôi xe VinFast VF e34 tại sự kiện công cộng, đăng tải trên Wikimedia Commons bởi tác giả `Tuannh.286` dưới giấy phép CC BY-SA 4.0.
+  + Mục đích: Sử dụng trong nghiên cứu khoa học, mô phỏng thuật toán thị giác máy tính và giáo dục kỹ thuật (Fair Use / Academic Demonstration).
+- **Rủi ro sở hữu trí tuệ thương hiệu (Trademark / Industrial Design):**
+  + Kiểu dáng công nghiệp và logo chữ V của VinFast thuộc quyền sở hữu của Tập đoàn Vingroup / Công ty CP Sản xuất & Kinh doanh VinFast.
+  + Trong môi trường sản xuất thương mại nếu không có thỏa thuận chính thức, hệ thống sẽ sử dụng sprite xe đồ họa vector trừu tượng tự dựng (`sim/car_template.png`, không chứa logo hoặc đường nét nhận diện nhãn hiệu độc quyền) để loại bỏ 100% rủi ro pháp lý.
+

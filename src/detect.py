@@ -14,6 +14,7 @@ Mục đích:
      do đó chiều rộng xe giả định cần có cơ chế tùy biến hoặc dùng giá trị kỳ vọng (1.80m).
 """
 
+import os
 from typing import List, Dict, Any, Optional
 import numpy as np
 from ultralytics import YOLO
@@ -32,10 +33,20 @@ class VehicleDetector:
     """Module phát hiện phương tiện sử dụng mô hình học YOLO pretrained."""
     def __init__(
         self,
-        model_path: str = "yolov8n.pt",
+        model_path: Optional[str] = None,
         confidence_threshold: float = 0.35,
         device: str = "cpu"
     ):
+        if model_path is None:
+            # Check models/ directory first for offline capability
+            pkg_model = os.path.join(os.path.dirname(__file__), "..", "models", "yolov8n.pt")
+            cwd_model = os.path.join("models", "yolov8n.pt")
+            if os.path.exists(pkg_model):
+                model_path = os.path.abspath(pkg_model)
+            elif os.path.exists(cwd_model):
+                model_path = os.path.abspath(cwd_model)
+            else:
+                model_path = "yolov8n.pt"
         self.model_path = model_path
         self.confidence_threshold = confidence_threshold
         self.device = device
