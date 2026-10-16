@@ -147,7 +147,7 @@ Báo cáo đầy đủ mọi dải đo, **không giấu số xấu**:
 
 #### 12. "Con số tiết kiệm ~9.29 tỷ VNĐ trong IMPACT.md dựa trên cơ sở nào, có kiểm chứng được không?"
 > **Đáp án:**
-> *"Đây là **mô hình ước lượng giả định** (kịch bản cơ sở do script `eval/impact_calc.py` tính toán), **không phải số liệu tài chính đã kiểm chứng**. Mô hình giả định đội 30.000 xe, mỗi xe gặp 350 sự kiện bám đuôi sát/năm, xác suất xảy ra va chạm là 0.015% và cảnh báo giúp ngăn chặn được 25% số vụ. Chúng tôi đã đưa cả 3 kịch bản (thận trọng 0.51 tỷ, cơ sở 9.29 tỷ, lạc quan 51.7 tỷ) trong tài liệu để thể hiện tính bất định."*
+> *"Đây là **mô hình ước lượng giả định** (kịch bản cơ sở do script `eval/impact_calc.py` tính toán), **không phải số liệu tài chính đã kiểm chứng**. Mô hình giả định đội 30.000 xe, mỗi xe gặp 350 sự kiện bám đuôi sát/năm, xác suất xảy ra va chạm là 0.015% và cảnh báo giúp ngăn chặn được 25% số vụ. Chúng tôi đã đưa cả 3 kịch bản (thận trọng 0.51 tỷ, cơ sở 9.29 tỷ, lạc quan 51.71 tỷ) trong tài liệu để thể hiện tính bất định."*
 
 #### 13. "Làm thế nào để mở rộng hệ thống này trong tương lai?"
 > **Đáp án:**
